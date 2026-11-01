@@ -408,9 +408,6 @@ const description = profile
         const textSpan = btn.querySelector('.follow-btn-text');
         if (textSpan) textSpan.textContent = 'Urmărește';
         
-        const checkIcon = btn.querySelector('.follow-btn-check');
-        if (checkIcon) checkIcon.hidden = true;
-        
         // Save to user metadata
         saveFollowed(clerk.user, followed);
       } else {
@@ -421,10 +418,7 @@ const description = profile
         
         // Update button text
         const textSpan = btn.querySelector('.follow-btn-text');
-        if (textSpan) textSpan.textContent = 'Urmaresc';
-        
-        const checkIcon = btn.querySelector('.follow-btn-check');
-        if (checkIcon) checkIcon.hidden = false;
+        if (textSpan) textSpan.textContent = 'Deja urmăresc';
         
         // Save to user metadata
         saveFollowed(clerk.user, followed);
@@ -521,7 +515,7 @@ const description = profile
           ? `<button type="button" class="portfolio-action portfolio-action-move" data-portfolio-move="${escapeHtml(item.slug)}" data-next="p">Mută în portofoliu</button>`
           : `<button type="button" class="portfolio-action portfolio-action-move portfolio-action-move-w" data-portfolio-move="${escapeHtml(item.slug)}" data-next="w">Mută în lista de dorințe</button>`;
 
-        return `<article class="portfolio-item" data-state="${state === 'p' ? 'portfolio' : 'wishlist'}"><a href="/cristale/${escapeHtml(item.slug)}" class="portfolio-item-link"><div class="portfolio-item-img">${image}</div><div class="portfolio-item-body"><span class="portfolio-item-name">${escapeHtml(item.name)}</span></div></a><div class="portfolio-item-actions">${moveBtn}<button type="button" class="portfolio-action portfolio-action-remove" data-portfolio-remove="${escapeHtml(item.slug)}">Elimină</button></div></article>`;
+        return `<article class="portfolio-item" data-state="${state === 'p' ? 'portfolio' : 'wishlist'}"><a href="/cristale/${escapeHtml(item.slug)}" class="portfolio-item-link"><div class="portfolio-item-img">${image}</div><div class="portfolio-item-body"><span class="portfolio-item-name">${escapeHtml(item.name)}</span></div></a><div class="portfolio-item-actions portfolio-item-actions-owner" data-item-actions="${state === 'p' ? 'p' : 'w'}" hidden>${moveBtn}<button type="button" class="portfolio-action portfolio-action-remove" data-portfolio-remove="${escapeHtml(item.slug)}">Elimină</button></div></article>`;
       };
 
       portfolioGrid.innerHTML = portfolio.map(i => renderCard(i, 'p')).join('');
@@ -653,9 +647,12 @@ const description = profile
             followBtn.classList.add('is-following');
             followBtn.dataset.following = 'true';
             const textSpan = followBtn.querySelector('.follow-btn-text');
-            if (textSpan) textSpan.textContent = 'Urmaresc';
-            const checkIcon = followBtn.querySelector('.follow-btn-check');
-            if (checkIcon) checkIcon.hidden = false;
+            if (textSpan) textSpan.textContent = 'Deja urmăresc';
+          } else {
+            followBtn.classList.remove('is-following');
+            followBtn.dataset.following = 'false';
+            const textSpan = followBtn.querySelector('.follow-btn-text');
+            if (textSpan) textSpan.textContent = 'Urmărește';
           }
           followBtn.addEventListener('click', () => toggleFollow(followBtn));
         }
@@ -1195,15 +1192,20 @@ const description = profile
     border-radius: var(--radius-full);
     cursor: pointer;
     transition: all var(--transition-fast);
-    background: #18181b;
-    color: #fff;
-    border: 1px solid #18181b;
+    background: transparent;
+    color: #000;
+    border: 1px solid #000;
     margin-left: auto;
   }
 
   .follow-btn:hover {
-    background: #27272a;
-    border-color: #27272a;
+    background: var(--color-crystal-green, #22c55e);
+    border-color: var(--color-crystal-green, #22c55e);
+    color: #fff;
+  }
+
+  .follow-btn:hover .follow-btn-check {
+    display: inline-block;
   }
 
   .follow-btn.is-following {
@@ -1212,17 +1214,14 @@ const description = profile
     color: #fff;
   }
 
+  .follow-btn.is-following .follow-btn-check {
+    display: inline-block;
+  }
+
   .follow-btn.is-following:hover {
-    background: #ef4444;
-    border-color: #ef4444;
-  }
-
-  .follow-btn.is-following:hover .follow-btn-text::before {
-    content: "Nu mai urmări";
-  }
-
-  .follow-btn.is-following:hover .follow-btn-text span {
-    display: none;
+    background: transparent;
+    border-color: #000;
+    color: #000;
   }
 
   .follow-btn.is-following:hover .follow-btn-check {
