@@ -81,6 +81,59 @@ export interface FollowedProfile {
   imageUrl: string;
 }
 
+export async function fetchFollowersOf(targetUsername: string): Promise<FollowedProfile[]> {
+  const cleanTarget = targetUsername.replace(/^@/, '').trim().toLowerCase();
+  const secretKey = CLERK_SECRET_KEY || import.meta.env.CLERK_SECRET_KEY;
+  if (!secretKey) {
+    console.warn('[Crystalica Server] CLERK_SECRET_KEY lipsește');
+    return [];
+  }
+
+  try {
+    const url = 'https://api.clerk.com/v1/users?limit=500';
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${secretKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!res.ok) {
+      console.error('[Crystalica Server] Eroare Clerk API:', res.status, res.statusText);
+      return [];
+    }
+
+    const users = await res.json();
+    const followers: FollowedProfile[] = [];
+
+    if (!Array.isArray(users)) return [];
+
+    for (const user of users) {
+      const rawFollowed = user.unsafe_metadata?.followed;
+      const followedList: string[] = Array.isArray(rawFollowed)
+        ? rawFollowed
+        : typeof rawFollowed === 'string'
+          ? rawFollowed.split(',').filter(Boolean)
+          : [];
+
+      if (followedList.some((f: string) => typeof f === 'string' && f.trim().toLowerCase() === cleanTarget)) {
+        const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username || '';
+        followers.push({
+          id: user.id,
+          username: user.username || '',
+          fullName,
+          imageUrl: user.image_url || '',
+        });
+      }
+    }
+
+    return followers;
+  } catch (err) {
+    console.error('[Crystalica Server] Excepție la fetchFollowersOf:', err);
+    return [];
+  }
+}
+
 export async function fetchFollowedProfiles(usernames: string[]): Promise<FollowedProfile[]> {
   if (!usernames.length) return [];
   
