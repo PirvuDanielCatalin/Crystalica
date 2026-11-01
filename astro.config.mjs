@@ -30,4 +30,14 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
   },
+
+  env: {
+    schema: {
+      CLERK_SECRET_KEY: envField.string({
+        context: 'server',
+        access: 'secret',
+        optional: true,
+      }),
+    },
+  },
 });
