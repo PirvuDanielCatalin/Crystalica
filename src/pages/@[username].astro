@@ -763,13 +763,17 @@ const description = profile
       }
     })();
     
-    // Unfollow button click handler
+    // Unfollow button click handler - check ownership dynamically
     document.addEventListener('click', async (event) => {
-      const button = event.target.closest('[data-unfollow]');
-      if (!button) return;
-      
       const clerk = window.__crystalicaClerk;
       if (!clerk?.user) return;
+      
+      const userUsername = clerk.user.username || '';
+      const isOwnProfile = userUsername.toLowerCase() === routeUsername.toLowerCase();
+      if (!isOwnProfile) return;
+      
+      const button = event.target.closest('[data-unfollow]');
+      if (!button) return;
       
       const username = button.dataset.unfollow;
       if (!username) return;
