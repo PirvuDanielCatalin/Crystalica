@@ -1,40 +1,55 @@
 import { test, expect } from '@playwright/test';
 
 const BASE_URL = 'http://localhost:4321';
+const OTHER_USER = 'danielcatalinpirvu';
 
 // Unauthenticated tests - run without storage state
 test.describe('Profile - Unauthenticated', () => {
   test.describe.configure({ retries: 0, projects: ['chromium-unauth'] });
-  
+
   test.beforeEach(async ({ page }) => {
     await page.goto(BASE_URL);
     await page.waitForLoadState('networkidle');
   });
 
-  test('Unauthenticated user: follow button hidden on other profile', async ({ page }) => {
-    await page.goto(`${BASE_URL}/@danielcatalinpirvu`);
+  test('unauthenticated: follow button is hidden on another profile', async ({ page }) => {
+    await page.goto(`${BASE_URL}/@${OTHER_USER}`);
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(800);
 
-    const followBtn = page.locator('[data-follow-btn]');
-    await expect(followBtn).toHaveAttribute('hidden');
+    await expect(page.locator('[data-follow-btn]')).toBeHidden();
   });
 
-  test('Unauthenticated user: move/remove actions hidden on other profile', async ({ page }) => {
-    await page.goto(`${BASE_URL}/@danielcatalinpirvu`);
+  test('unauthenticated: move/remove actions are hidden', async ({ page }) => {
+    await page.goto(`${BASE_URL}/@${OTHER_USER}`);
     await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(800);
 
-    const actionButtons = page.locator('.portfolio-item-actions-owner:not([hidden])');
-    await expect(actionButtons).toHaveCount(0);
+    const actions = page.locator('.portfolio-item-actions-owner');
+    const count = await actions.count();
+    expect(count).toBeGreaterThan(0);
+    for (let i = 0; i < Math.min(count, 5); i++) {
+      await expect(actions.nth(i)).toBeHidden();
+    }
   });
 
-  test('Unauthenticated user: Community/Settings tabs hidden', async ({ page }) => {
-    await page.goto(`${BASE_URL}/@danielcatalinpirvu`);
+  test('unauthenticated: Community/Settings tabs are hidden', async ({ page }) => {
+    await page.goto(`${BASE_URL}/@${OTHER_USER}`);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(800);
+
+    await expect(page.locator('[data-nav-tab="community"]')).toBeHidden();
+    await expect(page.locator('[data-nav-tab="settings"]')).toBeHidden();
+    await expect(page.locator('[data-nav-tab="portfolio"]')).toBeVisible();
+  });
+
+  test('unauthenticated: header shows portfolio, wishlist, following and follower stats', async ({ page }) => {
+    await page.goto(`${BASE_URL}/@${OTHER_USER}`);
     await page.waitForLoadState('networkidle');
 
-    const communityTab = page.locator('[data-nav-tab="community"]');
-    const settingsTab = page.locator('[data-nav-tab="settings"]');
-
-    await expect(communityTab).toHaveAttribute('hidden');
-    await expect(settingsTab).toHaveAttribute('hidden');
+    await expect(page.locator('[data-portfolio-count]').first()).toBeVisible();
+    await expect(page.locator('[data-wishlist-count]').first()).toBeVisible();
+    await expect(page.locator('[data-following-count]').first()).toBeVisible();
+    await expect(page.locator('[data-followers-count]').first()).toBeVisible();
   });
 });

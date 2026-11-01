@@ -1,157 +1,168 @@
 import { test, expect } from '@playwright/test';
 
 const BASE_URL = 'http://localhost:4321';
+const OTHER_USER = 'danielcatalinpirvu';
 
 // Authenticated tests - run with storage state
 test.describe('Profile Authentication & Actions', () => {
   test.describe.configure({ retries: 0 });
-  
+
   let currentUsername = '';
-  
+
   test.beforeEach(async ({ page }) => {
     await page.goto(BASE_URL);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);
-    
-    // Get the current authenticated username
-    currentUsername = await page.evaluate(() => window.__crystalicaClerk?.user?.username || '');
-    console.log('Current authenticated user:', currentUsername);
+
+    currentUsername = await page.evaluate(
+      () => window.__crystalicaClerk?.user?.username || '',
+    );
   });
 
-  test('Authenticated user: follow button visible on @danielcatalinpirvu profile', async ({ page }) => {
-    await page.goto(`${BASE_URL}/@danielcatalinpirvu`);
-    await page.waitForLoadState('networkidle');
+  test('other profile: follow button is actually VISIBLE', async ({ page }) => {
+    test.skip(currentUsername.toLowerCase() === OTHER_USER, 'Logged in as the viewed user');
 
-    // Wait for the follow button to be visible (not hidden)
-    await page.waitForFunction(() => {
-      const btn = document.querySelector('[data-follow-btn]');
-      return btn && !btn.hasAttribute('hidden');
-    }, { timeout: 15000 });
-    await page.waitForTimeout(500);
+    await page.goto(`${BASE_URL}/@${OTHER_USER}`);
+    await page.waitForLoadState('networkidle');
 
     const followBtn = page.locator('[data-follow-btn]');
-    await expect(followBtn).not.toHaveAttribute('hidden');
+    // wait until the client script decides to show it
+    await expect(followBtn).toBeVisible({ timeout: 15000 });
   });
 
-  test('Authenticated user: follow button hidden on own profile', async ({ page }) => {
-    if (!currentUsername) {
-      test.skip('No authenticated user');
-      return;
-    }
-    
+  test('own profile: follow button is actually HIDDEN', async ({ page }) => {
+    test.skip(!currentUsername, 'No authenticated user');
+
     await page.goto(`${BASE_URL}/@${currentUsername}`);
     await page.waitForLoadState('networkidle');
+    await page.waitForFunction(
+      () => window.__crystalicaClerk?.user?.username !== undefined,
+      { timeout: 15000 },
+    );
+    await page.waitForTimeout(800);
 
-    // Wait for profile page to initialize and Clerk user to be loaded
-    await page.waitForFunction(() => window.__crystalicaClerk?.user?.username !== undefined, { timeout: 15000 });
-    await page.waitForTimeout(500);
+    await expect(page.locator('[data-follow-btn]')).toBeHidden();
+  });
+
+  test('own profile: Community and Settings tabs are visible', async ({ page }) => {
+    test.skip(!currentUsername, 'No authenticated user');
+
+    await page.goto(`${BASE_URL}/@${currentUsername}`);
+    await page.waitForLoadState('networkidle');
+    await page.waitForFunction(
+      () => window.__crystalicaClerk?.user?.username !== undefined,
+      { timeout: 15000 },
+    );
+    await page.waitForTimeout(800);
+
+    await expect(page.locator('[data-nav-tab="community"]')).toBeVisible();
+    await expect(page.locator('[data-nav-tab="settings"]')).toBeVisible();
+  });
+
+  test('other profile: only Portfolio tab is visible', async ({ page }) => {
+    await page.goto(`${BASE_URL}/@${OTHER_USER}`);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(800);
+
+    await expect(page.locator('[data-nav-tab="portfolio"]')).toBeVisible();
+    await expect(page.locator('[data-nav-tab="community"]')).toBeHidden();
+    await expect(page.locator('[data-nav-tab="settings"]')).toBeHidden();
+  });
+
+  test('other profile: move/remove actions are NOT visible', async ({ page }) => {
+    await page.goto(`${BASE_URL}/@${OTHER_USER}`);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(800);
+
+    const actions = page.locator('.portfolio-item-actions-owner');
+    const count = await actions.count();
+    expect(count).toBeGreaterThan(0);
+    for (let i = 0; i < Math.min(count, 5); i++) {
+      await expect(actions.nth(i)).toBeHidden();
+    }
+  });
+
+  test('other profile: hovering a crystal does not reveal move/remove', async ({ page }) => {
+    await page.goto(`${BASE_URL}/@${OTHER_USER}`);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(800);
+
+    const firstCard = page.locator('.portfolio-item').first();
+    await firstCard.hover();
+    await page.waitForTimeout(400);
+
+    const actions = page.locator('.portfolio-item-actions-owner').first();
+    await expect(actions).toBeHidden();
+  });
+
+  test('own profile: Portfolio tab is active and visible', async ({ page }) => {
+    test.skip(!currentUsername, 'No authenticated user');
+
+    await page.goto(`${BASE_URL}/@${currentUsername}`);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(800);
+
+    await expect(page.locator('[data-nav-tab="portfolio"]')).toHaveClass(/portfolio-nav-active/);
+    await expect(page.locator('[data-tab="portfolio"]')).toBeVisible();
+  });
+
+  test('own profile: move/remove actions ARE visible', async ({ page }) => {
+    test.skip(!currentUsername, 'No authenticated user');
+
+    await page.goto(`${BASE_URL}/@${currentUsername}`);
+    await page.waitForLoadState('networkidle');
+    await page.waitForFunction(
+      () => window.__crystalicaClerk?.user?.username !== undefined,
+      { timeout: 15000 },
+    );
+    await page.waitForTimeout(800);
+
+    const actions = page.locator('.portfolio-item-actions-owner');
+    const count = await actions.count();
+    if (count === 0) {
+      test.skip(true, 'Own profile has no crystals');
+      return;
+    }
+    await expect(actions.first()).toBeVisible();
+  });
+
+  test('other profile: follow toggle works', async ({ page }) => {
+    test.skip(currentUsername.toLowerCase() === OTHER_USER, 'Logged in as the viewed user');
+
+    await page.goto(`${BASE_URL}/@${OTHER_USER}`);
+    await page.waitForLoadState('networkidle');
 
     const followBtn = page.locator('[data-follow-btn]');
-    await expect(followBtn).toHaveAttribute('hidden');
-  });
+    await expect(followBtn).toBeVisible({ timeout: 15000 });
 
-  test('Authenticated user: Community/Settings tabs hidden on own profile', async ({ page }) => {
-    if (!currentUsername) {
-      test.skip('No authenticated user');
-      return;
-    }
-    
-    await page.goto(`${BASE_URL}/@${currentUsername}`);
-    await page.waitForLoadState('networkidle');
-
-    // Wait for profile page to initialize
-    await page.waitForFunction(() => window.__crystalicaClerk?.user?.username !== undefined, { timeout: 15000 });
-    await page.waitForTimeout(500);
-
-    const communityTab = page.locator('[data-nav-tab="community"]');
-    const settingsTab = page.locator('[data-nav-tab="settings"]');
-
-    await expect(communityTab).toHaveAttribute('hidden');
-    await expect(settingsTab).toHaveAttribute('hidden');
-  });
-
-  test('Authenticated user: only Portfolio tab visible on other profile', async ({ page }) => {
-    await page.goto(`${BASE_URL}/@danielcatalinpirvu`);
-    await page.waitForLoadState('networkidle');
-
-    await page.waitForTimeout(500);
-
-    const visibleTabs = page.locator('[data-nav-tab]:not([hidden])');
-    await expect(visibleTabs).toHaveCount(1);
-    await expect(visibleTabs.first()).toHaveAttribute('data-nav-tab', 'portfolio');
-  });
-
-  test('Authenticated user: move/remove actions NOT visible on other profile', async ({ page }) => {
-    await page.goto(`${BASE_URL}/@danielcatalinpirvu`);
-    await page.waitForLoadState('networkidle');
-
-    await page.waitForTimeout(500);
-
-    const actionButtons = page.locator('.portfolio-item-actions-owner:not([hidden])');
-    await expect(actionButtons).toHaveCount(0);
-  });
-
-  test('Authenticated user: Portfolio tab works on own profile', async ({ page }) => {
-    if (!currentUsername) {
-      test.skip('No authenticated user');
-      return;
-    }
-    
-    await page.goto(`${BASE_URL}/@${currentUsername}`);
-    await page.waitForLoadState('networkidle');
-
-    await page.waitForTimeout(500);
-
-    const portfolioTab = page.locator('[data-nav-tab="portfolio"]');
-    await expect(portfolioTab).toHaveClass(/portfolio-nav-active/);
-
-    const portfolioContent = page.locator('[data-tab="portfolio"]');
-    await expect(portfolioContent).not.toBeHidden();
-  });
-
-  test('Authenticated user: follow toggle works', async ({ page }) => {
-    await page.goto(`${BASE_URL}/@danielcatalinpirvu`);
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(500);
-
-    const followBtn = page.locator('[data-follow-btn]');
     const initialState = await followBtn.getAttribute('class');
     const isInitiallyFollowing = initialState?.includes('is-following');
-    
+
     if (!isInitiallyFollowing) {
-      // Not following - click to follow
       await followBtn.click();
-      await page.waitForTimeout(2000);
       await expect(followBtn).toHaveClass(/is-following/);
       await expect(followBtn.locator('.follow-btn-text')).toHaveText('Deja urmăresc');
     } else {
-      // Already following - verify state
       await expect(followBtn).toHaveClass(/is-following/);
       await expect(followBtn.locator('.follow-btn-text')).toHaveText('Deja urmăresc');
     }
   });
 
-  test('Authenticated user: following hover shows "Nu mai urmări"', async ({ page }) => {
-    await page.goto(`${BASE_URL}/@danielcatalinpirvu`);
+  test('other profile: following hover shows "Nu mai urmări"', async ({ page }) => {
+    test.skip(currentUsername.toLowerCase() === OTHER_USER, 'Logged in as the viewed user');
+
+    await page.goto(`${BASE_URL}/@${OTHER_USER}`);
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(500);
 
     const followBtn = page.locator('[data-follow-btn]');
-    
-    // Ensure user is following (click if not)
-    const currentState = await followBtn.getAttribute('class');
-    const isFollowing = currentState?.includes('is-following');
-    
-    if (!isFollowing) {
+    await expect(followBtn).toBeVisible({ timeout: 15000 });
+
+    if (!(await followBtn.getAttribute('class'))?.includes('is-following')) {
       await followBtn.click();
-      await page.waitForTimeout(2000);
+      await expect(followBtn).toHaveClass(/is-following/);
     }
-    
-    await page.waitForTimeout(500);
 
     await followBtn.hover();
-    await page.waitForTimeout(300);
-
     await expect(followBtn.locator('.follow-btn-text')).toHaveText('Nu mai urmări');
     await expect(followBtn).toHaveCSS('border-color', 'rgb(0, 0, 0)');
   });
