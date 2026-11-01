@@ -1,0 +1,100 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Pagina nu a fost găsită — Crystalica" description="Pagina pe care o cauți nu există sau a fost mutată.">
+  <div class="error-page">
+    <div class="error-container">
+      <div class="error-icon" aria-hidden="true">
+        <svg width="64" height="64" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M16 2L28 10v16L16 30 4 18V10L16 2Z" stroke-linejoin="round"/>
+          <path d="M12 12l8 8M20 12l-8 8" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h1 class="error-title">404</h1>
+      <p class="error-subtitle">Pagina pe care o cauți nu există sau a fost mutată.</p>
+      <div class="error-actions">
+        <a href="/" class="btn-primary">Înapoi la prima pagină</a>
+        <a href="/cristale" class="btn-secondary">Vezi toate cristalele</a>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .error-page {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-8);
+    text-align: center;
+  }
+
+  .error-container {
+    max-width: 480px;
+  }
+
+  .error-icon {
+    color: var(--color-crystal-teal);
+    margin-bottom: var(--space-4);
+    display: inline-flex;
+    opacity: 0.8;
+  }
+
+  .error-title {
+    font-family: var(--font-heading);
+    font-size: var(--text-5xl);
+    font-weight: 800;
+    margin: 0 0 var(--space-2);
+    color: var(--color-text);
+  }
+
+  .error-subtitle {
+    color: var(--color-text-muted);
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-6);
+    line-height: 1.5;
+  }
+
+  .error-actions {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-3) var(--space-6);
+    background: var(--color-crystal-teal);
+    color: #fff;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    text-decoration: none;
+    transition: background var(--transition-fast);
+  }
+
+  .btn-primary:hover {
+    background: var(--color-crystal-teal-dark, #2d7b73);
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-3) var(--space-6);
+    background: transparent;
+    border: 1px solid var(--color-border-strong);
+    color: var(--color-text);
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    text-decoration: none;
+    transition: border-color var(--transition-fast), color var(--transition-fast);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--color-crystal-teal);
+    color: var(--color-crystal-teal);
+  }
+</style>
