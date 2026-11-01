@@ -3,6 +3,7 @@
 
 export type CollectionState = 'p' | 'w';
 export type CollectionsMap = Record<string, CollectionState>;
+export type FollowedMap = Record<string, true>; // username -> true
 
 interface CrystalicaClerkWindow extends Window {
   Clerk?: any;
@@ -219,4 +220,75 @@ export async function saveCollections(
   document.dispatchEvent(
     new CustomEvent<CollectionsMap>('crystalica:collections', { detail: collections }),
   );
+}
+
+export function readFollowed(user: unknown): FollowedMap {
+  const metadata = (user as { unsafeMetadata?: Record<string, unknown> } | null | undefined)
+    ?.unsafeMetadata;
+  const raw = metadata?.followed;
+  const followed: FollowedMap = {};
+
+  if (Array.isArray(raw)) {
+    for (const username of raw) {
+      if (username && typeof username === 'string') {
+        followed[username.toLowerCase()] = true;
+      }
+    }
+    return followed;
+  }
+
+  if (typeof raw === 'string') {
+    for (const username of raw.split(',')) {
+      const clean = username.trim().toLowerCase();
+      if (clean) followed[clean] = true;
+    }
+    return followed;
+  }
+
+  return followed;
+}
+
+export function currentFollowed(): FollowedMap {
+  return readFollowed(clerk?.user);
+}
+
+export async function saveFollowed(
+  user: { unsafeMetadata?: Record<string, unknown>; update: (data: any) => Promise<unknown> },
+  followed: FollowedMap,
+): Promise<void> {
+  const usernames = Object.keys(followed);
+  const unsafeMetadata = {
+    ...(user.unsafeMetadata ?? {}),
+    followed: usernames,
+  };
+
+  await user.update({ unsafeMetadata });
+  document.dispatchEvent(
+    new CustomEvent<FollowedMap>('crystalica:followed', { detail: followed }),
+  );
+}
+
+export async function followUser(
+  user: { unsafeMetadata?: Record<string, unknown>; update: (data: any) => Promise<unknown> },
+  username: string,
+): Promise<void> {
+  const current = readFollowed(user);
+  const cleanUsername = username.trim().toLowerCase();
+  if (!cleanUsername || current[cleanUsername]) return;
+
+  const next = { ...current, [cleanUsername]: true };
+  await saveFollowed(user, next);
+}
+
+export async function unfollowUser(
+  user: { unsafeMetadata?: Record<string, unknown>; update: (data: any) => Promise<unknown> },
+  username: string,
+): Promise<void> {
+  const current = readFollowed(user);
+  const cleanUsername = username.trim().toLowerCase();
+  if (!cleanUsername || !current[cleanUsername]) return;
+
+  const next = { ...current };
+  delete next[cleanUsername];
+  await saveFollowed(user, next);
 }

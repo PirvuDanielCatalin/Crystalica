@@ -6,6 +6,7 @@ export interface PublicProfile {
   fullName: string;
   imageUrl: string;
   collections: Record<string, 'p' | 'w'>;
+  followed: string[];
 }
 
 export async function fetchClerkUserProfile(username: string): Promise<PublicProfile | null> {
@@ -55,15 +56,77 @@ export async function fetchClerkUserProfile(username: string): Promise<PublicPro
 
     const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username || cleanUsername;
 
+    const rawFollowed = user.unsafe_metadata?.followed;
+    const followed: string[] = Array.isArray(rawFollowed) ? rawFollowed : 
+      (typeof rawFollowed === 'string' ? rawFollowed.split(',').filter(Boolean) : []);
+
     return {
       id: user.id,
       username: user.username || cleanUsername,
       fullName,
       imageUrl: user.image_url || '',
       collections,
+      followed,
     };
   } catch (err) {
     console.error('[Crystalica Server] Excepție la fetchClerkUserProfile:', err);
     return null;
+  }
+}
+
+export interface FollowedProfile {
+  id: string;
+  username: string;
+  fullName: string;
+  imageUrl: string;
+}
+
+export async function fetchFollowedProfiles(usernames: string[]): Promise<FollowedProfile[]> {
+  if (!usernames.length) return [];
+  
+  const secretKey = CLERK_SECRET_KEY || import.meta.env.CLERK_SECRET_KEY;
+  if (!secretKey) {
+    console.warn('[Crystalica Server] CLERK_SECRET_KEY lipsește');
+    return [];
+  }
+
+  try {
+    const results: FollowedProfile[] = [];
+    
+    // Fetch in batches to avoid URL length limits
+    for (const username of usernames) {
+      const cleanUsername = username.replace(/^@/, '').trim();
+      if (!cleanUsername) continue;
+      
+      const url = `https://api.clerk.com/v1/users?username=${encodeURIComponent(cleanUsername.toLowerCase())}&limit=1`;
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${secretKey}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!res.ok) {
+        console.error('[Crystalica Server] Eroare Clerk API:', res.status, res.statusText);
+        continue;
+      }
+
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        const user = data[0];
+        const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.username || cleanUsername;
+        results.push({
+          id: user.id,
+          username: user.username || cleanUsername,
+          fullName,
+          imageUrl: user.image_url || '',
+        });
+      }
+    }
+    
+    return results;
+  } catch (err) {
+    console.error('[Crystalica Server] Excepție la fetchFollowedProfiles:', err);
+    return [];
   }
 }

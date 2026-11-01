@@ -74,6 +74,12 @@ const description = profile
             </span>
           </div>
         </div>
+        <button type="button" class="follow-btn" data-follow-btn hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="follow-btn-check" hidden>
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <span class="follow-btn-text">Urmărește</span>
+        </button>
       </header>
 
       <!-- Two-panel layout: sidebar left, content right -->
@@ -87,6 +93,15 @@ const description = profile
                 <path d="M12 3v18"/>
               </svg>
               Portofoliul personal
+            </button>
+            <button type="button" class="portfolio-nav-item" data-nav-tab="following" hidden>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              Profile urmărite
             </button>
             <button type="button" class="portfolio-nav-item" data-nav-tab="settings" hidden>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -213,6 +228,16 @@ const description = profile
               </div>
             </div>
           </section>
+
+          <!-- Following tab (owner only) -->
+          <section class="portfolio-tab" data-tab="following" hidden>
+            <div class="portfolio-tab-header">
+              <h2>Profile Urmărite</h2>
+              <span class="portfolio-tab-count" data-following-count>0 persoane</span>
+            </div>
+            <div class="following-grid" data-following-grid></div>
+            <p class="portfolio-empty" data-following-empty hidden>Nu urmărești încă niciun profil.</p>
+          </section>
         </main>
       </div>
     </div>
@@ -221,6 +246,7 @@ const description = profile
   <script is:inline type="application/json" id="crystal-index" set:html={JSON.stringify(crystalIndex)}></script>
   <script is:inline type="application/json" id="route-username" set:html={`"${username}"`}></script>
   <script is:inline type="application/json" id="server-collections" set:html={JSON.stringify(profile.collections)}></script>
+  <script is:inline type="application/json" id="server-followed" set:html={JSON.stringify(profile.followed || [])}></script>
 </BaseLayout>
   )
   : (
@@ -259,7 +285,12 @@ const description = profile
       ? JSON.parse(document.getElementById('server-collections')?.textContent || '{}')
       : {};
 
+    const serverFollowed = typeof window !== 'undefined'
+      ? JSON.parse(document.getElementById('server-followed')?.textContent || '[]')
+      : [];
+
     let collections = serverCollections;
+    let followed = serverFollowed; // array of usernames being followed
     let isOwner = false;
 
     function waitForClerkReady(timeout = 15000) {
@@ -293,12 +324,125 @@ const description = profile
 
       // Show settings nav item
       document.querySelectorAll('[data-nav-tab="settings"]').forEach(el => el.hidden = false);
+      
+      // Show following nav item
+      const followingNav = document.querySelector('[data-nav-tab="following"]');
+      if (followingNav) followingNav.hidden = false;
 
       // Show action buttons on all items
       document.querySelectorAll('.portfolio-item-actions-owner').forEach(el => el.hidden = false);
 
       // Show settings tab content (hidden by default)
       // Tab switching already works
+      
+      // Render followed users grid if on own profile
+      if (routeUsername.toLowerCase() === window.__crystalicaClerk?.user?.username?.toLowerCase()) {
+        renderFollowingGrid();
+      }
+    }
+    
+    function isFollowing(username) {
+      return followed.some(u => u.toLowerCase() === username.toLowerCase());
+    }
+    
+    function toggleFollow(btn) {
+      const clerk = window.__crystalicaClerk;
+      if (!clerk?.user) return;
+      
+      const userUsername = clerk.user.username || '';
+      const targetUsername = routeUsername;
+      
+      if (userUsername.toLowerCase() === targetUsername.toLowerCase()) {
+        // Owner viewing own profile - follow/unfollow button hidden
+        return;
+      }
+      
+      const currentlyFollowing = isFollowing(targetUsername);
+      
+      if (currentlyFollowing) {
+        // Unfollow
+        followed = followed.filter(u => u.toLowerCase() !== targetUsername.toLowerCase());
+        btn.classList.remove('is-following');
+        btn.dataset.following = 'false';
+        
+        // Update button text
+        const textSpan = btn.querySelector('.follow-btn-text');
+        if (textSpan) textSpan.textContent = 'Urmărește';
+        
+        const checkIcon = btn.querySelector('.follow-btn-check');
+        if (checkIcon) checkIcon.hidden = true;
+        
+        // Save to user metadata
+        saveFollowed(clerk.user, followed);
+      } else {
+        // Follow
+        followed = [...followed, targetUsername];
+        btn.classList.add('is-following');
+        btn.dataset.following = 'true';
+        
+        // Update button text
+        const textSpan = btn.querySelector('.follow-btn-text');
+        if (textSpan) textSpan.textContent = 'Urmaresc';
+        
+        const checkIcon = btn.querySelector('.follow-btn-check');
+        if (checkIcon) checkIcon.hidden = false;
+        
+        // Save to user metadata
+        saveFollowed(clerk.user, followed);
+      }
+    }
+    
+    async function saveFollowed(user, newFollowed) {
+      const unsafeMetadata = {
+        ...(user.unsafeMetadata ?? {}),
+        followed: newFollowed,
+      };
+      await user.update({ unsafeMetadata });
+      document.dispatchEvent(
+        new CustomEvent('crystalica:followed', { detail: newFollowed }),
+      );
+    }
+    
+    function renderFollowingGrid() {
+      const grid = document.querySelector('[data-following-grid]');
+      const empty = document.querySelector('[data-following-empty]');
+      const count = document.querySelector('[data-following-count]');
+      
+      if (!grid) return;
+      
+      if (followed.length === 0) {
+        grid.innerHTML = '';
+        if (empty) empty.hidden = false;
+        if (count) count.textContent = '0 persoane';
+        return;
+      }
+      
+      if (empty) empty.hidden = true;
+      if (count) count.textContent = `${followed.length} persoane`;
+      
+      // Render cards for each followed user
+      grid.innerHTML = followed.map(username => `
+        <div class="following-card" data-followed-user="${escapeHtml(username)}">
+          <a href="/@${escapeHtml(username)}" class="following-card-link">
+            <div class="following-card-avatar">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </div>
+            <div class="following-card-info">
+              <span class="following-card-name">@${escapeHtml(username)}</span>
+              <span class="following-card-username">Urmărește</span>
+            </div>
+          </a>
+          ${routeUsername.toLowerCase() === username.toLowerCase() ? '' : `
+          <div class="following-card-actions">
+            <button type="button" class="unfollow-btn" data-unfollow="${escapeHtml(username)}">
+              Elimină din urmărite
+            </button>
+          </div>`}
+        </div>
+      `).join('');
     }
 
     function renderCounts() {
@@ -443,17 +587,45 @@ const description = profile
         renderCounts();
       }
     });
+    
+    // Listen for follow updates from other pages
+    document.addEventListener('crystalica:followed', (event) => {
+      const detail = (event as CustomEvent).detail;
+      if (!detail) return;
+      followed = detail;
+      if (isOwner) {
+        renderFollowingGrid();
+      }
+    });
 
     // Initialize
     (async () => {
       const clerk = await waitForClerkReady();
-      if (!clerk || !clerk.user) return;
+      if (!clerk) return;
+
+      const user = clerk.user;
+      
+      // Show follow button if viewing someone else's profile
+      if (user && user.username?.toLowerCase() !== routeUsername.toLowerCase()) {
+        const followBtn = document.querySelector('[data-follow-btn]');
+        if (followBtn) {
+          followBtn.hidden = false;
+          if (isFollowing(routeUsername)) {
+            followBtn.classList.add('is-following');
+            followBtn.dataset.following = 'true';
+            const textSpan = followBtn.querySelector('.follow-btn-text');
+            if (textSpan) textSpan.textContent = 'Urmaresc';
+            const checkIcon = followBtn.querySelector('.follow-btn-check');
+            if (checkIcon) checkIcon.hidden = false;
+          }
+          followBtn.addEventListener('click', () => toggleFollow(followBtn));
+        }
+      }
 
       // Check if current user is the owner of this profile
-      const userUsername = clerk.user.username || '';
-      if (userUsername.toLowerCase() === routeUsername.toLowerCase()) {
+      if (user && user.username?.toLowerCase() === routeUsername.toLowerCase()) {
         // Owner: sync from client-side Clerk user
-        const metadata = clerk.user.unsafeMetadata || {};
+        const metadata = user.unsafeMetadata || {};
         const raw = metadata.collections;
         const clientCollections = {};
         if (typeof raw === 'string') {
@@ -472,6 +644,15 @@ const description = profile
         collections = clientCollections;
         updateGrids();
         renderCounts();
+        
+        // Sync followed from user metadata
+        const rawFollowed = metadata.followed;
+        if (Array.isArray(rawFollowed)) {
+          followed = rawFollowed;
+        } else if (typeof rawFollowed === 'string') {
+          followed = rawFollowed.split(',').filter(Boolean);
+        }
+        
         activateOwnerMode();
 
         clerk.addListener(() => {
@@ -479,6 +660,7 @@ const description = profile
           // Re-check ownership
           const u = clerk.user.username || '';
           if (u.toLowerCase() !== routeUsername.toLowerCase()) return;
+          
           const md = clerk.user.unsafeMetadata || {};
           const r = md.collections;
           const cc = {};
@@ -494,9 +676,42 @@ const description = profile
           collections = cc;
           updateGrids();
           renderCounts();
+          
+          // Sync followed
+          const rf = md.followed;
+          if (Array.isArray(rf)) {
+            followed = rf;
+          } else if (typeof rf === 'string') {
+            followed = rf.split(',').filter(Boolean);
+          }
+          renderFollowingGrid();
         });
       }
     })();
+    
+    // Unfollow button click handler
+    document.addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-unfollow]');
+      if (!button) return;
+      
+      const clerk = window.__crystalicaClerk;
+      if (!clerk?.user) return;
+      
+      const username = button.dataset.unfollow;
+      if (!username) return;
+      
+      const previous = [...followed];
+      followed = followed.filter(u => u.toLowerCase() !== username.toLowerCase());
+      renderFollowingGrid();
+      
+      try {
+        await saveFollowed(clerk.user, followed);
+      } catch (error) {
+        followed = previous;
+        renderFollowingGrid();
+        console.error('[Crystalica] Nu am putut salva urmărirea.', error);
+      }
+    });
   })();
 </script>
 
@@ -927,6 +1142,147 @@ const description = profile
     color: var(--color-crystal-teal);
     transform: translateX(4px);
     background: transparent;
+  }
+
+  /* ===== Follow Button Styles ===== */
+  .follow-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-5);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    font-family: var(--font-body);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    background: #18181b;
+    color: #fff;
+    border: 1px solid #18181b;
+    margin-left: auto;
+  }
+
+  .follow-btn:hover {
+    background: #27272a;
+    border-color: #27272a;
+  }
+
+  .follow-btn.is-following {
+    background: var(--color-crystal-green, #22c55e);
+    border-color: var(--color-crystal-green, #22c55e);
+    color: #fff;
+  }
+
+  .follow-btn.is-following:hover {
+    background: #ef4444;
+    border-color: #ef4444;
+  }
+
+  .follow-btn.is-following:hover .follow-btn-text::before {
+    content: "Nu mai urmări";
+  }
+
+  .follow-btn.is-following:hover .follow-btn-text span {
+    display: none;
+  }
+
+  .follow-btn.is-following:hover .follow-btn-check {
+    display: none;
+  }
+
+  /* ===== Followed Users Grid ===== */
+  .following-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--space-4);
+  }
+
+  .following-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  }
+
+  .following-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-crystal-teal);
+  }
+
+  .following-card-link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .following-card-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    background: var(--color-earth-100);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .following-card-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .following-card-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .following-card-name {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--color-text);
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .following-card-username {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    display: block;
+  }
+
+  .following-card-actions {
+    padding: var(--space-2) var(--space-3) var(--space-3);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .unfollow-btn {
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    font-family: var(--font-body);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    background: var(--color-bg-elevated);
+    color: var(--color-text-muted);
+    transition: all var(--transition-fast);
+  }
+
+  .unfollow-btn:hover {
+    background: var(--color-crystal-red, #ef4444);
+    color: #fff;
+    border-color: var(--color-crystal-red, #ef4444);
   }
 
   /* ===== Error Page ===== */
