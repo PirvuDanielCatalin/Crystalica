@@ -361,19 +361,9 @@ const description = profile
   function activateOwnerMode() {
       isOwner = true;
   
-      // Show settings nav item
-      document.querySelectorAll('[data-nav-tab="settings"]').forEach(el => el.hidden = false);
-      
-      // Show community nav item
-      const communityNav = document.querySelector('[data-nav-tab="community"]');
-      if (communityNav) communityNav.hidden = false;
-
-      // Show action buttons on all items
+      // Show action buttons on all items (tabs remain permanently hidden)
       document.querySelectorAll('.portfolio-item-actions-owner').forEach(el => el.hidden = false);
 
-      // Show settings tab content (hidden by default)
-      // Tab switching already works
-      
       // Render followed users grid if on own profile
       if (routeUsername.toLowerCase() === window.__crystalicaClerk?.user?.username?.toLowerCase()) {
         renderFollowingGrid();
@@ -670,6 +660,17 @@ const description = profile
       const userUsername = user.username.toLowerCase();
       const isOwnProfile = userUsername === routeUsername.toLowerCase();
       
+      // Sync followed from CURRENT user's metadata (not the viewed profile's)
+      const metadata = user.unsafeMetadata || {};
+      const rawFollowed = metadata.followed;
+      if (Array.isArray(rawFollowed)) {
+        followed = rawFollowed;
+      } else if (typeof rawFollowed === 'string') {
+        followed = rawFollowed.split(',').filter(Boolean);
+      } else {
+        followed = [];
+      }
+      
       // Show follow button ONLY if viewing someone else's profile (and user has username)
       if (!isOwnProfile) {
         const followBtn = document.querySelector('[data-follow-btn]');
@@ -687,6 +688,7 @@ const description = profile
             if (textSpan) textSpan.textContent = 'Urmărește';
           }
           followBtn.addEventListener('click', () => toggleFollow(followBtn));
+          setupFollowButtonHover(followBtn);
         }
       } else {
         // On own profile - ensure follow button stays hidden
