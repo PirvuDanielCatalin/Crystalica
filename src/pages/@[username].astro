@@ -636,10 +636,25 @@ const description = profile
       const clerk = await waitForClerkReady();
       if (!clerk) return;
 
-      const user = clerk.user;
+      // Wait for user object to be fully loaded (username might not be available immediately)
+      let user = clerk.user;
+      let attempts = 0;
+      while ((!user || !user.username) && attempts < 50) {
+        await new Promise(r => setTimeout(r, 100));
+        user = clerk.user;
+        attempts++;
+      }
       
-      // Show follow button if viewing someone else's profile
-      if (user && user.username?.toLowerCase() !== routeUsername.toLowerCase()) {
+      if (!user || !user.username) {
+        console.warn('[Crystalica] User object not fully loaded after waiting');
+        return;
+      }
+      
+      const userUsername = user.username.toLowerCase();
+      const isOwnProfile = userUsername === routeUsername.toLowerCase();
+      
+      // Show follow button ONLY if viewing someone else's profile (and user has username)
+      if (!isOwnProfile) {
         const followBtn = document.querySelector('[data-follow-btn]');
         if (followBtn) {
           followBtn.hidden = false;
@@ -656,10 +671,14 @@ const description = profile
           }
           followBtn.addEventListener('click', () => toggleFollow(followBtn));
         }
+      } else {
+        // On own profile - ensure follow button stays hidden
+        const followBtn = document.querySelector('[data-follow-btn]');
+        if (followBtn) followBtn.hidden = true;
       }
 
       // Check if current user is the owner of this profile
-      if (user && user.username?.toLowerCase() === routeUsername.toLowerCase()) {
+      if (isOwnProfile) {
         // Owner: sync from client-side Clerk user
         const metadata = user.unsafeMetadata || {};
         const raw = metadata.collections;
