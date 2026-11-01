@@ -66,7 +66,7 @@ const { variant = 'desktop' } = Astro.props;
 
       <div class="auth-user" data-auth-user hidden>
         <span class="auth-user-name" data-auth-user-name></span>
-        <a href="/portofoliu" class="auth-portfolio-link" data-auth-portfolio-link>Portofoliul meu</a>
+        <a href="#" class="auth-portfolio-link" data-auth-portfolio-link>Portofoliul meu</a>
         <button type="button" class="auth-btn auth-btn-ghost auth-btn-logout" data-auth-logout>Deconectare</button>
       </div>
     </>
@@ -124,6 +124,18 @@ const { variant = 'desktop' } = Astro.props;
             userName.textContent = user.fullName || user.firstName || user.emailAddresses?.[0]?.emailAddress?.split('@')[0] || 'Utilizator';
           }
           if (portfolioLink) {
+            // Set href dynamically based on username
+            const username = user.username || '';
+            if (username) {
+              portfolioLink.href = `/@${username}`;
+            } else {
+              portfolioLink.href = '#';
+              portfolioLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                const clerk = window.__crystalicaClerk;
+                clerk?.openUserProfile();
+              });
+            }
             // Show portfolio link only on desktop (expanded navbar), hide on mobile
             portfolioLink.style.display = variant === 'mobile' ? 'none' : '';
           }
@@ -217,7 +229,14 @@ const { variant = 'desktop' } = Astro.props;
       const portfolioBtn = root.querySelector<HTMLButtonElement>('[data-auth-portfolio]');
       if (portfolioBtn) {
         portfolioBtn.addEventListener('click', () => {
-          window.location.href = '/portofoliu';
+          const clerk = window.__crystalicaClerk;
+          if (!clerk?.user) return;
+          const username = clerk.user.username || '';
+          if (username) {
+            window.location.href = `/@${username}`;
+          } else {
+            clerk.openUserProfile();
+          }
         });
       }
       const logoutBtnIcon = root.querySelector<HTMLButtonElement>('[data-auth-logout]');

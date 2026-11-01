@@ -190,7 +190,12 @@
         name.className = 'secondary-user-name';
         name.textContent = displayName(user);
         name.addEventListener('click', () => {
-          window.location.href = '/portofoliu';
+          const username = user.username || '';
+          if (username) {
+            window.location.href = `/@${username}`;
+          } else {
+            clerk.openUserProfile();
+          }
         });
 
         secondaryAuth.append(name);
@@ -235,7 +240,12 @@
       if (!clerk) return;
 
       if (clerk.user) {
-        window.location.href = '/portofoliu';
+        const username = clerk.user.username || '';
+        if (username) {
+          window.location.href = `/@${username}`;
+        } else {
+          clerk.openUserProfile();
+        }
       } else {
         openModal(clerk, 'signIn');
       }
