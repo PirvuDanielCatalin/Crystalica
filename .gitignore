@@ -50,3 +50,5 @@ Thumbs.db
 AGENTS.md
 .planning/
 
+tests/playwright/.auth/
+tests/playwright/.auth/

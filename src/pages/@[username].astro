@@ -4,7 +4,7 @@ export const prerender = false;
 
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { fetchClerkUserProfile, type PublicProfile, fetchFollowersOf } from '../utils/clerk-server';
+import { fetchClerkUserProfile, type PublicProfile, fetchFollowersOf, fetchFollowedProfiles } from '../utils/clerk-server';
 
 const username = Astro.params.username;
 const profile = await fetchClerkUserProfile(username);
@@ -30,7 +30,11 @@ const wishlistSlugs = profile
   ? new Set(Object.entries(profile.collections).filter(([, s]) => s === 'w').map(([k]) => k))
   : new Set<string>();
 
+// Fetch followers and following data for header counts
 const followers = await fetchFollowersOf(username);
+const followingProfiles = profile?.followed 
+  ? await fetchFollowedProfiles(profile.followed) 
+  : [];
 
 const title = profile
   ? `${profile.fullName} — Profil Crystalica`
@@ -73,6 +77,14 @@ const description = profile
             <span class="portfolio-stat-separator" aria-hidden="true">·</span>
             <span class="portfolio-stat">
               <strong data-wishlist-count>{wishlistSlugs.size}</strong> în lista de dorințe
+            </span>
+            <span class="portfolio-stat-separator" aria-hidden="true">·</span>
+            <span class="portfolio-stat">
+              <strong data-following-count>{profile?.followed?.length || 0}</strong> urmărite
+            </span>
+            <span class="portfolio-stat-separator" aria-hidden="true">·</span>
+            <span class="portfolio-stat">
+              <strong data-followers-count>{followers.length}</strong> urmăritori
             </span>
           </div>
         </div>
@@ -245,22 +257,24 @@ const description = profile
                 <div class="following-grid">
                   {followers.map((f) => (
                     <div class="following-card">
-                      <a href={`/@${f.username}`} class="following-card-link">
-                        <div class="following-card-avatar">
-                          {f.imageUrl ? (
-                            <img src={f.imageUrl} alt="" loading="lazy" />
-                          ) : (
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                              <circle cx="12" cy="7" r="4"/>
-                            </svg>
-                          )}
-                        </div>
-                        <div class="following-card-info">
-                          <span class="following-card-name">{f.fullName}</span>
-                          <span class="following-card-username">@{f.username}</span>
-                        </div>
-                      </a>
+                      <div class="following-card-inner">
+                        <a href={`/@${f.username}`} class="following-card-link">
+                          <div class="following-card-avatar">
+                            {f.imageUrl ? (
+                              <img src={f.imageUrl} alt="" loading="lazy" />
+                            ) : (
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                              </svg>
+                            )}
+                          </div>
+                          <div class="following-card-info">
+                            <span class="following-card-name">{f.fullName}</span>
+                            <span class="following-card-username">@{f.username}</span>
+                          </div>
+                        </a>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -272,9 +286,38 @@ const description = profile
             <!-- Following section -->
             <div class="community-section">
               <h3 class="community-section-title">Profile Urmărite</h3>
-              <span class="community-section-count" data-following-count>0 persoane</span>
-              <div class="following-grid" data-following-grid></div>
-              <p class="community-empty" data-following-empty hidden>Nu urmărești încă niciun profil.</p>
+              <span class="community-section-count" data-following-count>{followingProfiles.length} persoane</span>
+              {followingProfiles.length > 0 ? (
+                <div class="following-grid">
+                  {followingProfiles.map((f) => (
+                    <div class="following-card" data-followed-user={f.username}>
+                      <div class="following-card-inner">
+                        <a href={`/@${f.username}`} class="following-card-link">
+                          <div class="following-card-avatar">
+                            {f.imageUrl ? (
+                              <img src={f.imageUrl} alt="" loading="lazy" />
+                            ) : (
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                              </svg>
+                            )}
+                          </div>
+                          <div class="following-card-info">
+                            <span class="following-card-name">{f.fullName}</span>
+                            <span class="following-card-username">@{f.username}</span>
+                          </div>
+                        </a>
+                        <button type="button" class="unfollow-btn" data-unfollow={f.username}>
+                          Elimină din urmărite
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p class="community-empty" data-following-empty>Nu urmărești încă niciun profil.</p>
+              )}
             </div>
           </section>
         </main>
@@ -284,8 +327,9 @@ const description = profile
 
   <script is:inline type="application/json" id="crystal-index" set:html={JSON.stringify(crystalIndex)}></script>
   <script is:inline type="application/json" id="route-username" set:html={`"${username}"`}></script>
-  <script is:inline type="application/json" id="server-collections" set:html={JSON.stringify(profile.collections)}></script>
-  <script is:inline type="application/json" id="server-followed" set:html={JSON.stringify(profile.followed || [])}></script>
+  <script is:inline type="application/json" id="server-collections" set:html={JSON.stringify(profile?.collections || {})}></script>
+  <script is:inline type="application/json" id="server-followed" set:html={JSON.stringify(profile?.followed || [])}></script>
+  <script is:inline type="application/json" id="server-following-profiles" set:html={JSON.stringify(followingProfiles)}></script>
 </BaseLayout>
   )
   : (
@@ -331,6 +375,13 @@ const description = profile
     let collections = serverCollections;
     let followed = serverFollowed; // array of usernames being followed
     let isOwner = false;
+
+    // Read server-rendered following profiles for initial render
+    let serverFollowingProfiles = [];
+    try {
+      const el = document.getElementById('server-following-profiles');
+      if (el?.textContent) serverFollowingProfiles = JSON.parse(el.textContent);
+    } catch {}
 
     function waitForClerkReady(timeout = 15000) {
       return new Promise((resolve, reject) => {
@@ -426,6 +477,38 @@ const description = profile
       );
     }
     
+    function setupFollowButtonHover(btn) {
+      const textSpan = btn.querySelector('.follow-btn-text');
+      const checkIcon = btn.querySelector('.follow-btn-check');
+      
+      btn.addEventListener('mouseenter', () => {
+        if (btn.classList.contains('is-following')) {
+          // Following state: show "Nu mai urmări" and black border
+          if (textSpan) textSpan.textContent = 'Nu mai urmări';
+          btn.style.borderColor = '#000';
+          if (checkIcon) checkIcon.hidden = false;
+        } else {
+          // Not following: green background with checkmark
+          btn.style.backgroundColor = '#22c55e';
+          if (checkIcon) checkIcon.hidden = false;
+        }
+      });
+      
+      btn.addEventListener('mouseleave', () => {
+        if (btn.classList.contains('is-following')) {
+          // Following state: restore "Deja urmăresc" and green border
+          if (textSpan) textSpan.textContent = 'Deja urmăresc';
+          btn.style.borderColor = '#22c55e';
+          if (checkIcon) checkIcon.hidden = true;
+        } else {
+          // Not following: restore original state
+          btn.style.backgroundColor = '';
+          if (checkIcon) checkIcon.hidden = true;
+          if (textSpan) textSpan.textContent = 'Urmărește';
+        }
+      });
+    }
+    
     function renderFollowingGrid() {
       const grid = document.querySelector('[data-following-grid]');
       const empty = document.querySelector('[data-following-empty]');
@@ -446,24 +529,24 @@ const description = profile
       // Render cards for each followed user
       grid.innerHTML = followed.map(username => `
         <div class="following-card" data-followed-user="${escapeHtml(username)}">
-          <a href="/@${escapeHtml(username)}" class="following-card-link">
-            <div class="following-card-avatar">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
-            </div>
-            <div class="following-card-info">
-              <span class="following-card-name">@${escapeHtml(username)}</span>
-              <span class="following-card-username">Urmărește</span>
-            </div>
-          </a>
-          ${routeUsername.toLowerCase() === username.toLowerCase() ? '' : `
-          <div class="following-card-actions">
+          <div class="following-card-inner">
+            <a href="/@${escapeHtml(username)}" class="following-card-link">
+              <div class="following-card-avatar">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </div>
+              <div class="following-card-info">
+                <span class="following-card-name">@${escapeHtml(username)}</span>
+                <span class="following-card-username">Urmărește</span>
+              </div>
+            </a>
+            ${routeUsername.toLowerCase() === username.toLowerCase() ? '' : `
             <button type="button" class="unfollow-btn" data-unfollow="${escapeHtml(username)}">
               Elimină din urmărite
-            </button>
-          </div>`}
+            </button>`}
+          </div>
         </div>
       `).join('');
     }
@@ -613,7 +696,7 @@ const description = profile
 
     // Listen for collection updates from other pages
     document.addEventListener('crystalica:collections', (event) => {
-      const detail = (event as CustomEvent).detail;
+      const detail = event.detail;
       if (!detail) return;
       const clerk = window.__crystalicaClerk;
       if (!clerk?.user) return;
@@ -627,7 +710,7 @@ const description = profile
     
     // Listen for follow updates from other pages
     document.addEventListener('crystalica:followed', (event) => {
-      const detail = (event as CustomEvent).detail;
+      const detail = event.detail;
       if (!detail) return;
       const clerk = window.__crystalicaClerk;
       if (!clerk?.user) return;
@@ -689,6 +772,44 @@ const description = profile
           }
           followBtn.addEventListener('click', () => toggleFollow(followBtn));
           setupFollowButtonHover(followBtn);
+        }
+        
+        // Render following grid with server data for other profiles
+        if (serverFollowingProfiles.length > 0) {
+          const grid = document.querySelector('[data-following-grid]');
+          const empty = document.querySelector('[data-following-empty]');
+          const count = document.querySelector('[data-following-count]');
+          
+          if (grid) {
+            if (empty) empty.hidden = true;
+            if (count) count.textContent = `${serverFollowingProfiles.length} persoane`;
+            
+            grid.innerHTML = serverFollowingProfiles.map(f => `
+              <div class="following-card" data-followed-user="${escapeHtml(f.username)}">
+                <div class="following-card-inner">
+                  <a href="/@${escapeHtml(f.username)}" class="following-card-link">
+                    <div class="following-card-avatar">
+                      ${f.imageUrl ? 
+                        `<img src="${escapeHtml(f.imageUrl)}" alt="" loading="lazy" />` : 
+                        `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                          <circle cx="12" cy="7" r="4"/>
+                        </svg>`
+                      }
+                    </div>
+                    <div class="following-card-info">
+                      <span class="following-card-name">${escapeHtml(f.fullName)}</span>
+                      <span class="following-card-username">@${escapeHtml(f.username)}</span>
+                    </div>
+                  </a>
+                  ${routeUsername.toLowerCase() === f.username.toLowerCase() ? '' : `
+                  <button type="button" class="unfollow-btn" data-unfollow="${escapeHtml(f.username)}">
+                    Elimină din urmărite
+                  </button>`}
+                </div>
+              </div>
+            `).join('');
+          }
         }
       } else {
         // On own profile - ensure follow button stays hidden
@@ -1325,6 +1446,12 @@ const description = profile
     border-color: var(--color-crystal-teal);
   }
 
+  .following-card-inner {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
   .following-card-link {
     display: flex;
     align-items: center;
@@ -1396,6 +1523,19 @@ const description = profile
     background: var(--color-crystal-red, #ef4444);
     color: #fff;
     border-color: var(--color-crystal-red, #ef4444);
+  }
+
+  /* Show unfollow button on card hover */
+  .following-card .unfollow-btn {
+    opacity: 0;
+    transform: translateY(4px);
+    pointer-events: none;
+  }
+
+  .following-card:hover .unfollow-btn {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
   }
 
   /* ===== Error Page ===== */

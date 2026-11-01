@@ -1,4 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const STORAGE_STATE = path.join(__dirname, 'tests/playwright/.auth/user.json');
 
 export default defineConfig({
   testDir: './tests/playwright',
@@ -14,7 +20,20 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'chromium',
+      name: 'setup',
+      testMatch: /.*\.setup\.ts/,
+      use: {
+        // Don't use storage state for setup test
+        storageState: { cookies: [], origins: [] },
+      },
+    },
+    {
+      name: 'chromium-auth',
+      use: { ...devices['Desktop Chrome'], storageState: STORAGE_STATE },
+      dependencies: ['setup'],
+    },
+    {
+      name: 'chromium-unauth',
       use: { ...devices['Desktop Chrome'] },
     },
   ],
