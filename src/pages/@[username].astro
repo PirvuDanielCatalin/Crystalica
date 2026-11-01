@@ -538,10 +538,16 @@ const description = profile
       );
     }
 
-    // Nav tab switching
+    // Nav tab switching - check ownership dynamically
     document.querySelectorAll('[data-nav-tab]').forEach(item => {
       item.addEventListener('click', () => {
-        if (!isOwner) return;
+        const clerk = window.__crystalicaClerk;
+        if (!clerk?.user) return;
+        
+        const userUsername = clerk.user.username || '';
+        const isOwnProfile = userUsername.toLowerCase() === routeUsername.toLowerCase();
+        if (!isOwnProfile) return;
+        
         const tabName = item.dataset.navTab;
         if (!tabName) return;
 
@@ -556,12 +562,17 @@ const description = profile
       });
     });
 
-    // Move/remove buttons
+    // Move/remove buttons - check ownership dynamically
     document.addEventListener('click', async (event) => {
-      if (!isOwner) return;
       const clerk = window.__crystalicaClerk;
+      if (!clerk?.user) return;
+      
+      const userUsername = clerk.user.username || '';
+      const isOwnProfile = userUsername.toLowerCase() === routeUsername.toLowerCase();
+      if (!isOwnProfile) return;
+      
       const button = event.target.closest('[data-portfolio-move], [data-portfolio-remove]');
-      if (!button || !clerk?.user) return;
+      if (!button) return;
 
       const slug = button.dataset.portfolioMove || button.dataset.portfolioRemove;
       if (!slug) return;
@@ -614,21 +625,27 @@ const description = profile
     document.addEventListener('crystalica:collections', (event) => {
       const detail = (event as CustomEvent).detail;
       if (!detail) return;
+      const clerk = window.__crystalicaClerk;
+      if (!clerk?.user) return;
+      const userUsername = clerk.user.username || '';
+      const isOwnProfile = userUsername.toLowerCase() === routeUsername.toLowerCase();
+      if (!isOwnProfile) return;
       collections = detail;
-      if (isOwner) {
-        updateGrids();
-        renderCounts();
-      }
+      updateGrids();
+      renderCounts();
     });
     
     // Listen for follow updates from other pages
     document.addEventListener('crystalica:followed', (event) => {
       const detail = (event as CustomEvent).detail;
       if (!detail) return;
+      const clerk = window.__crystalicaClerk;
+      if (!clerk?.user) return;
+      const userUsername = clerk.user.username || '';
+      const isOwnProfile = userUsername.toLowerCase() === routeUsername.toLowerCase();
+      if (!isOwnProfile) return;
       followed = detail;
-      if (isOwner) {
-        renderFollowingGrid();
-      }
+      renderFollowingGrid();
     });
 
     // Initialize
