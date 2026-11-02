@@ -10,7 +10,9 @@ Acest document descrie comenzile necesare pentru dezvoltare locală, construirea
 npm run build
 ```
 
-Această comandă generează site-ul static în directorul `dist/client/` (Astro + `@astrojs/cloudflare` adapter cu `output: 'static'`). Este comanda folosită automat de Cloudflare Pages când face push pe `main`.
+Această comandă generează site-ul static în `dist/client/` și worker-ul SSR în `dist/server/` (Astro + `@astrojs/cloudflare`). La final, `scripts/prepare-pages-worker.mjs` copiază bundle-ul SSR în `dist/client/_worker.js/`, astfel încât Cloudflare Pages să ruleze rutele dinamice (`/@[username]`).
+
+> Fără `dist/client/_worker.js/`, Pages publică doar fișiere statice, iar `/@[username]` (singura rută `prerender = false`) întoarce 404.
 
 ### 2. Deploy (Publicare)
 
@@ -28,10 +30,14 @@ npx wrangler pages deploy dist/client
 ### 3. Preview (Previzualizare)
 
 ```bash
+# Preview Astro (rulează worker-ul generat)
 npm run preview
+
+# Preview în runtime-ul Cloudflare Pages (simulează producția)
+npm run preview:pages
 ```
 
-Aceasta lansează un server local care servește build-ul actual (din `dist/`). Este util pentru a testa cum arată site-ul înainte de a face push către main.
+`npm run preview` reface `.wrangler/deploy/config.json` (șters intenționat de build), iar `npm run preview:pages` servește `dist/client/` exact ca Pages, inclusiv `_worker.js`.
 
 ## Development
 
@@ -54,11 +60,18 @@ Când configurezi repository-ul pe [Cloudflare Dashboard](https://dash.cloudflar
 - **Build output directory**: `dist/client`
 - **Root directory**: `/` ( rădăcina repository-ului )
 
-> **Important**: Astro cu adapterul `@astrojs/cloudflare` și `output: 'static'` generează output-ul în `dist/client/`, nu în `dist/`. Asigură-te că **Build output directory** e setat pe `dist/client` în dashboard.
+> **Important**: `dist/client/` trebuie să conțină și directorul `_worker.js/` generat de `npm run build`. Acesta rulează rutele SSR (`/@[username]`, `/_server-islands/*`, `/_image`). Fără el, doar paginile statice funcționează.
+
+Variabile de mediu (Settings → Environment variables), atât pentru Production cât și pentru Preview:
+
+- `PUBLIC_CLERK_PUBLISHABLE_KEY` — cheia publică Clerk (client)
+- `CLERK_SECRET_KEY` — cheia secretă Clerk (server, marcată ca *Secret*)
+
+Fără `CLERK_SECRET_KEY`, paginile de profil se randau cu mesajul „Profil negăsit”.
 
 Site-ul va fi disponibil la:
-- **Preview URL**: `https://cristalomagia.pages.dev` (sau branch-specific)
-- **Production URL**: `https://cristalomagia.com` (după ce configurezi domeniul custom)
+- **Production URL**: `https://crystalica.pages.dev`
+- **Preview URL**: `https://<commit-hash>.crystalica.pages.dev`
 
 ## Branch Protection
 
@@ -97,10 +110,14 @@ Fișierul `crystal-data.json` conține datele complete pentru toate cele 52 de c
 - Asigură-te că ai Node.js >= 24.0.0
 - Run `npm run build` local pentru a vedea erorile
 
-### Pagina nu apare pe Cloudflare Pages (404)
-- Verifică în Cloudflare Dashboard → Pages → cristalomagia → Settings → Build configuration
-- **Build output directory** trebuie să fie `dist/client` (NU `dist`)
-- Restartează build-ul manual din dashboard
+### Pagina de profil `/@username` întoarce 404
+Cauza: deploy-ul publică doar assets statice, fără worker-ul SSR.
+
+- Verifică local: `npm run build && npm run preview:pages`, apoi deschide `http://localhost:8788/@test`
+- Verifică în dashboard: **Build output directory** = `dist/client`
+- Verifică în log-ul de build că apare `[build] Cloudflare Pages worker prepared at dist/client/_worker.js`
+- Verifică în Cloudflare Dashboard → Pages → Settings → Environment variables că `CLERK_SECRET_KEY` este setat
+- Restartează build-ul manual din dashboard (Deployments → Retry deployment)
 
 ### Imaginile nu apar
 - Verifică dacă imaginile sunt în `public/images/crystals/`

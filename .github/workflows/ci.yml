@@ -27,6 +27,9 @@ jobs:
       - name: Build site
         run: npm run build
 
+      - name: Verify Cloudflare Pages worker (SSR routes)
+        run: test -f dist/client/_worker.js/index.js
+
   semgrep:
     name: Semgrep OSS
     runs-on: ubuntu-latest

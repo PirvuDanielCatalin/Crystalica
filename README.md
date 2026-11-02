@@ -43,7 +43,7 @@ npm run build
 npm run preview
 ```
 
-Build-ul generează output-ul static în `dist/` compatibil cu Cloudflare Pages.
+Build-ul generează asset-urile statice în `dist/client/` și worker-ul SSR în `dist/client/_worker.js/` (necesar pentru rutele `/@[username]`).
 
 ## Deploy pe Cloudflare Pages
 
@@ -53,9 +53,10 @@ Build-ul generează output-ul static în `dist/` compatibil cu Cloudflare Pages.
    - **Framework preset**: Astro
    - **Build command**: `npm run build`
    - **Build output directory**: `dist/client`
-4. Publică.
+4. Adaugă variabilele de mediu `PUBLIC_CLERK_PUBLISHABLE_KEY` și `CLERK_SECRET_KEY` (secret).
+5. Publică.
 
-Site-ul va fi disponibil la `https://cristalomagia.pages.dev` (sau domeniul custom configurat).
+Site-ul va fi disponibil la `https://crystalica.pages.dev` (sau domeniul custom configurat).
 
 ## Structură proiect
 
