@@ -1,0 +1,34 @@
+# Dependențe & build output (se reconstruiesc în stage-ul builder)
+node_modules
+dist
+dist-ssr
+.astro
+.wrangler
+.cache
+
+# VCS & CI
+.git
+.github
+
+# Secrete & mediu local (cheile publiche vin ca build ARG)
+.env
+.env.*
+!.env.example
+
+# Teste
+tests
+test-results
+playwright.config.ts
+
+# Docs & tooling neprocesate de build
+docs
+*.md
+AGENTS.md
+*.py
+
+# Diverse
+.DS_Store
+.vscode
+.idea
+*.log
+logs

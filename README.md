@@ -45,6 +45,30 @@ npm run preview
 
 Build-ul generează asset-urile statice în `dist/client/` și worker-ul SSR în `dist/client/_worker.js/` (necesar pentru rutele `/@[username]`).
 
+## Rulare locală în Docker
+
+Imaginea rulează build-ul de producție prin `wrangler pages dev` (workerd), exact ca în Cloudflare Pages.
+
+```bash
+# 1. Pregătește variabilele de mediu
+cp .env.example .env
+# Completează PUBLIC_CLERK_PUBLISHABLE_KEY și CLERK_SECRET_KEY în .env
+
+# 2. Build + rulare
+docker compose up --build
+```
+
+Site-ul este disponibil la `http://localhost:4321` (portul se poate schimba cu `APP_PORT` în `.env`).
+
+**Notă:** `PUBLIC_CLERK_PUBLISHABLE_KEY` este **necesară la build** (se inline-uiește în bundle), în timp ce `CLERK_SECRET_KEY` e secret de runtime (fără ea, rutele `/@[username]` nu pot interoga Clerk).
+
+### Release (GHCR)
+
+La fiecare push pe `main`, CI-ul creează automat un tag semver și publică imaginea Docker în `ghcr.io/pirvudanielcatalin/crystalica`.
+
+1. Bump-uiește `major` sau `minor` în `VERSION.json` (major/minor → `.0`, doar commit pe main → patch+1).
+2. Comite și push-uiește pe `main` — workflow-ul creează tag-ul git `v{major}.{minor}.{patch}` și publică imaginea cu tagurile `X.Y.Z`, `X.Y`, `X` și `latest`.
+
 ## Deploy pe Cloudflare Pages
 
 1. Conectează repository-ul GitHub la [Cloudflare Pages](https://dash.cloudflare.com/pages).

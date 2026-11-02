@@ -10,6 +10,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     name: Build
@@ -102,3 +106,87 @@ jobs:
         with:
           sarif_file: trivy-fs-results.sarif
           category: trivy-fs
+
+  version:
+    name: Release Version
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Compute version and tag
+        id: tag
+        run: |
+          set -euo pipefail
+          MAJOR="$(jq -r '.major' VERSION.json)"
+          MINOR="$(jq -r '.minor' VERSION.json)"
+          LAST_TAG="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+          if [ -z "${LAST_TAG}" ]; then
+            PATCH=0
+          else
+            TAG_PREFIX="v${MAJOR}.${MINOR}."
+            case "${LAST_TAG}" in
+              "${TAG_PREFIX}"*)
+                PATCH=$((10#${LAST_TAG#"${TAG_PREFIX}"} + 1))
+                ;;
+              *)
+                PATCH=0
+                ;;
+            esac
+          fi
+          VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+          # Doar tag-ul este push-uuit (fără commit pe main — branch protection).
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -f "${VERSION}"
+          git push origin "refs/tags/${VERSION}"
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+
+  docker:
+    name: Docker Release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.version.outputs.version }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ needs.version.outputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.version.outputs.version }}
+            type=semver,pattern={{major}},value=${{ needs.version.outputs.version }}
+            type=raw,value=latest
+      - name: Build and push image
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: PUBLIC_CLERK_PUBLISHABLE_KEY=${{ vars.PUBLIC_CLERK_PUBLISHABLE_KEY || secrets.PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
