@@ -41,6 +41,9 @@ npm run build
 
 # Preview build
 npm run preview
+
+# Teste Playwright
+npm run test:playwright
 ```
 
 Build-ul generează asset-urile statice în `dist/client/` și worker-ul SSR în `dist/client/_worker.js/` (necesar pentru rutele `/@[username]`).

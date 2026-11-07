@@ -8,6 +8,16 @@ astro dev --background
 
 Manage the background server with `astro dev stop`, `astro dev status`, and `astro dev logs`.
 
+## Testing
+
+Run all Playwright tests:
+
+```bash
+npm run test:playwright
+```
+
+Test results (`test-results/`, `playwright-report/`) and auth state (`tests/playwright/.auth/`) are excluded from Git via `.gitignore`.
+
 ## Documentation
 
 Full documentation: https://docs.astro.build

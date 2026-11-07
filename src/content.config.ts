@@ -12,7 +12,7 @@ const crystalSchema = z.object({
   element: z.array(z.string()),
   planet: z.string().optional(),
   origin: z.array(z.string()),
-  rarity: z.enum(['Comun', 'Rar', 'Foarte rar', 'Unic']),
+  rarity: z.string(),
   color: z.array(z.string()),
   properties: z.array(z.string()),
   otherNames: z.array(z.string()).optional(),

@@ -1,6 +1,6 @@
 # Playwright Configuration
 
-This directory contains Playwright tests for Crystalica profile authentication and actions.
+Acest director conține teste Playwright pentru Crystalica: autentificare, acțiuni pe pagini de profil, pagină de start, listarea cristalelor, detaliu cristal, navigare (404, RSS, chatbot).
 
 ## Setup
 
@@ -10,58 +10,65 @@ npm install --save-dev @playwright/test
 npx playwright install chromium
 ```
 
-## Running Tests
+## Rulare testele
 
 ```bash
-# Run all tests
-npx playwright test tests/playwright/
+# Toate testele Playwright
+npm run test:playwright
 
-# Run specific test file
-npx playwright test tests/playwright/profile-auth.spec.ts
+# Doar un fișier specific
+npx playwright test tests/playwright/homepage.spec.ts
 
-# Run unauthenticated tests only
-npx playwright test tests/playwright/profile-auth.spec.ts -g "Unauthenticated"
+# Doar teste autentificate
+npx playwright test tests/playwright/profile-auth.spec.ts --project=chromium-auth
 
-# View report
+# Doar teste neautentificate
+npx playwright test tests/playwright/profile-unauth.spec.ts --project=chromium-unauth
+
+# Vizualizare raport
 npx playwright show-report
 ```
 
-## Tests Coverage
+## Fișiere de teste
 
-### Unauthenticated Tests (Automated)
-- Follow button hidden on other profile
-- Move/remove actions hidden on other profile
-- Community/Settings tabs hidden
+| Fișier | Acoperă |
+|--------|---------|
+| `profile-auth.spec.ts` | Autentificat: buton de urmărire, tab-uri, acțiuni, contoruri, follow/unfollow |
+| `profile-unauth.spec.ts` | Neautentificat: buton ascuns, acțiuni ascunse, tab-uri ascunse, contoruri de header |
+| `homepage.spec.ts` | Pagina de start: titlu, buton "Explorează Cristalele", bara de căutare, scripturi Botpress |
+| `crystals.spec.ts` | Listarea cristalelor: navigație A-Z, click → detaliu, buton scroll-to-top (stânga) |
+| `navigation.spec.ts` | 404, RSS feed (`/rss.xml`), chatbot Botpress pe toate paginile |
 
-### Authenticated Tests
-Tests require manual authentication due to Clerk OAuth complexity. For authenticated testing, use manual login with:
-- User: test@example.com
-- Password: SmecherSmecher!132
+## Fișiere excluși din Git
 
-Or use Playwright storage state by logging in once and saving cookies.
+Următoarele nu sunt incluse în commit (sunt în `.gitignore`):
+- `test-results/` — rezultatele rulărilor Playwright
+- `playwright-report/` — raportul HTML al Playwright
+- `tests/playwright/.auth/` — starea de autentificare (contine tokenuri Clerk)
 
-## Manual Verification Checklist
+## Liste de verificare manuală
 
-When making changes to profile authentication, verify:
+Când faci modificări la paginile de profil, verifică:
 
-### Unauthenticated User
-- [ ] Visit `/@danielcatalinpirvu` - follow button hidden
-- [ ] Crystal cards clickable (navigates to detail)
-- [ ] Actions (move/remove) not visible
-- [ ] Community/Settings tabs hidden
+### Utilizator neautentificat
+- [ ] Visitează `/@danielcatalinpirvu` — buton de urmărire ascuns
+- [ ] Cardurile de cristale sunt clicabile (navighează la detaliu)
+- [ ] Acțiunile (mută/elimină) nu sunt vizibile
+- [ ] Tab-urile Comunitate/Configurație ascunse
+- [ ] Header-ul arată contorurile: portofoliu, listă de dorințe, urmărite, urmăritori
 
-### Authenticated as @test
-- [ ] Visit `/@test` - follow button hidden
-- [ ] Move/remove actions visible on own crystals
-- [ ] Portfolio tab works
-- [ ] Community/Settings tabs hidden
-- [ ] Visit `/@danielcatalinpirvu` - follow button visible (outlined black)
-- [ ] Follow button hover: green background, checkmark visible
-- [ ] Click follow: changes to "Deja urmăresc", green background
-- [ ] Follow button hover when following: "Nu mai urmări" text, outlined black
-- [ ] Crystal cards clickable (navigates to detail)
-- [ ] Actions (move/remove) not visible
+### Autentificat ca @test
+- [ ] Visitează `/@test` — buton de urmărire ascuns
+- [ ] Acțiunile (mută/elimină) vizibile pe cristalele proprii
+- [ ] Tab-ul Portfolio funcționează
+- [ ] Tab-urile Comunitate/Configurație vizibile (doar pe propriul profil)
+- [ ] Visitează `/@danielcatalinpirvu` — buton de urmărire vizibil (contornat negru)
+- [ ] Hover pe buton de urmărire: fundal verde, bife vizibilă
+- [ ] Click follow: schimbă în "Deja urmăresc", fundal verde
+- [ ] Hover când urmezi: text "Nu mai urmări", contorn negru
+- [ ] Cardurile de cristale clicabile (navighează la detaliu)
+- [ ] Acțiunile (mută/elimină) nu sunt vizibile pe profilul altcuiva
 
-## Git Commit Rules
+## Commit rules
 
-Tests must be committed and kept up to date with code changes. Run tests after each modification to ensure functionality remains correct.
+Testele trebuie comise și ținute la curent cu modificările de cod. Rulează testele după fiecare modificare pentru a asigura funcționalitatea.

@@ -12,7 +12,8 @@
     "preview:pages": "wrangler pages dev dist/client",
     "clean": "rm -rf node_modules/ dist/ .astro/ .cache/ .vscode/ .wrangler/",
     "c_u_i_b": "npm run clean && npm update --ignore-scripts && npm install --ignore-scripts && npm run build",
-    "c_u_i_b_d": "npm run c_u_i_b && npm run dev"
+    "c_u_i_b_d": "npm run c_u_i_b && npm run dev",
+    "test:playwright": "npx playwright test tests/playwright/"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.4.2",

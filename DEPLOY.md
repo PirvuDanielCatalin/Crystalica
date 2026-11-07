@@ -89,19 +89,22 @@ git push origin feat/nume-feature
 # Creează PR către main
 ```
 
-## Scripts de generare cristale
+## Teste Playwright
 
-Proiectul include scripturi Python pentru generarea conținutului cristalelor:
+Rulați toate testele Playwright cu:
 
 ```bash
-# Generează toate fișierele MDX din crystal-data.json
-python3 generate-crystals.py
-
-# Sau folosește varianta simplifica (doar 8 cristale demo)
-python3 generate_all.py
+npm run test:playwright
 ```
 
-Fișierul `crystal-data.json` conține datele complete pentru toate cele 52 de cristale.
+Testele rulează contra serverului de dezvoltare (`npm run dev`) și acoperă:
+- Pagină de profil (`/@[username]`) — butonul de urmărire, tab-urile, acțiunile de mutare/eliminare, contorii de header
+- Pagină de start — titlu, butonul „Explorează Cristalele", bara de căutare, scripturile Botpress
+- Listarea cristalelor (`/cristale`) — navigație A-Z, click pe cristal → detaliu, butonul scroll-to-top
+- Pagină de detaliu cristal (`/cristale/[slug]`) — numele cristalului, săgețile de navigație
+- Pagina 404, feedul RSS (`/rss.xml`), prezența chatbotului Botpress pe toate paginile
+
+Rezultatele testelor (`test-results/`, `playwright-report/`) și starea de autentificare (`tests/playwright/.auth/`) nu sunt incluse în Git (sunt în `.gitignore`).
 
 ## Troubleshooting
 
@@ -121,7 +124,7 @@ Cauza: deploy-ul publică doar assets statice, fără worker-ul SSR.
 
 ### Imaginile nu apar
 - Verifică dacă imaginile sunt în `public/images/crystals/`
-- Asigură-te că numele fișierelor corespund cu `image` din crystal-data.json
+- Asigură-te că numele fișierelor corespund cu `image` din fișierul MDX al cristalului în `src/content/crystals/`
 
 ### Preview nu arată schimbările
 - Rulează din nou `npm run build` înainte de `npm run preview`
