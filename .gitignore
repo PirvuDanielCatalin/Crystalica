@@ -52,3 +52,4 @@ AGENTS.md
 
 tests/playwright/.auth/
 test-results/
+playwright-report/

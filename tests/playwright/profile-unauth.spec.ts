@@ -5,7 +5,7 @@ const OTHER_USER = 'danielcatalinpirvu';
 
 // Unauthenticated tests - run without storage state
 test.describe('Profile - Unauthenticated', () => {
-  test.describe.configure({ retries: 0, projects: ['chromium-unauth'] });
+  test.describe.configure({ retries: 0 });
 
   test.beforeEach(async ({ page }) => {
     await page.goto(BASE_URL);
@@ -13,6 +13,8 @@ test.describe('Profile - Unauthenticated', () => {
   });
 
   test('unauthenticated: follow button is hidden on another profile', async ({ page }) => {
+    test.skip(test.info().project.name !== 'chromium-unauth', 'Requires unauthenticated project');
+
     await page.goto(`${BASE_URL}/@${OTHER_USER}`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(800);
@@ -21,6 +23,8 @@ test.describe('Profile - Unauthenticated', () => {
   });
 
   test('unauthenticated: move/remove actions are hidden', async ({ page }) => {
+    test.skip(test.info().project.name !== 'chromium-unauth', 'Requires unauthenticated project');
+
     await page.goto(`${BASE_URL}/@${OTHER_USER}`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(800);
@@ -34,6 +38,8 @@ test.describe('Profile - Unauthenticated', () => {
   });
 
   test('unauthenticated: Community/Settings tabs are hidden', async ({ page }) => {
+    test.skip(test.info().project.name !== 'chromium-unauth', 'Requires unauthenticated project');
+
     await page.goto(`${BASE_URL}/@${OTHER_USER}`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(800);
@@ -44,6 +50,8 @@ test.describe('Profile - Unauthenticated', () => {
   });
 
   test('unauthenticated: header shows portfolio, wishlist, following and follower stats', async ({ page }) => {
+    test.skip(test.info().project.name !== 'chromium-unauth', 'Requires unauthenticated project');
+
     await page.goto(`${BASE_URL}/@${OTHER_USER}`);
     await page.waitForLoadState('networkidle');
 

@@ -20,6 +20,7 @@ test.describe('Profile Authentication & Actions', () => {
   });
 
   test('other profile: follow button is actually VISIBLE', async ({ page }) => {
+      test.skip(test.info().project.name !== "chromium-auth", "Requires authenticated project");
     test.skip(currentUsername.toLowerCase() === OTHER_USER, 'Logged in as the viewed user');
 
     await page.goto(`${BASE_URL}/@${OTHER_USER}`);
@@ -31,6 +32,7 @@ test.describe('Profile Authentication & Actions', () => {
   });
 
   test('own profile: follow button is actually HIDDEN', async ({ page }) => {
+      test.skip(test.info().project.name !== "chromium-auth", "Requires authenticated project");
     test.skip(!currentUsername, 'No authenticated user');
 
     await page.goto(`${BASE_URL}/@${currentUsername}`);
@@ -45,6 +47,7 @@ test.describe('Profile Authentication & Actions', () => {
   });
 
   test('own profile: Community and Settings tabs are visible', async ({ page }) => {
+      test.skip(test.info().project.name !== "chromium-auth", "Requires authenticated project");
     test.skip(!currentUsername, 'No authenticated user');
 
     await page.goto(`${BASE_URL}/@${currentUsername}`);
@@ -60,6 +63,7 @@ test.describe('Profile Authentication & Actions', () => {
   });
 
   test('other profile: only Portfolio tab is visible', async ({ page }) => {
+      test.skip(test.info().project.name !== "chromium-auth", "Requires authenticated project");
     await page.goto(`${BASE_URL}/@${OTHER_USER}`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(800);
@@ -70,6 +74,7 @@ test.describe('Profile Authentication & Actions', () => {
   });
 
   test('other profile: move/remove actions are NOT visible', async ({ page }) => {
+      test.skip(test.info().project.name !== "chromium-auth", "Requires authenticated project");
     await page.goto(`${BASE_URL}/@${OTHER_USER}`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(800);
@@ -83,6 +88,7 @@ test.describe('Profile Authentication & Actions', () => {
   });
 
   test('other profile: hovering a crystal does not reveal move/remove', async ({ page }) => {
+      test.skip(test.info().project.name !== "chromium-auth", "Requires authenticated project");
     await page.goto(`${BASE_URL}/@${OTHER_USER}`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(800);
@@ -96,6 +102,7 @@ test.describe('Profile Authentication & Actions', () => {
   });
 
   test('own profile: Portfolio tab is active and visible', async ({ page }) => {
+      test.skip(test.info().project.name !== "chromium-auth", "Requires authenticated project");
     test.skip(!currentUsername, 'No authenticated user');
 
     await page.goto(`${BASE_URL}/@${currentUsername}`);
@@ -107,6 +114,7 @@ test.describe('Profile Authentication & Actions', () => {
   });
 
   test('own profile: move/remove actions ARE visible', async ({ page }) => {
+      test.skip(test.info().project.name !== "chromium-auth", "Requires authenticated project");
     test.skip(!currentUsername, 'No authenticated user');
 
     await page.goto(`${BASE_URL}/@${currentUsername}`);
@@ -127,6 +135,7 @@ test.describe('Profile Authentication & Actions', () => {
   });
 
   test('other profile: follow toggle works', async ({ page }) => {
+      test.skip(test.info().project.name !== "chromium-auth", "Requires authenticated project");
     test.skip(currentUsername.toLowerCase() === OTHER_USER, 'Logged in as the viewed user');
 
     await page.goto(`${BASE_URL}/@${OTHER_USER}`);
@@ -149,6 +158,7 @@ test.describe('Profile Authentication & Actions', () => {
   });
 
   test('other profile: following hover shows "Nu mai urmări"', async ({ page }) => {
+      test.skip(test.info().project.name !== "chromium-auth", "Requires authenticated project");
     test.skip(currentUsername.toLowerCase() === OTHER_USER, 'Logged in as the viewed user');
 
     await page.goto(`${BASE_URL}/@${OTHER_USER}`);
