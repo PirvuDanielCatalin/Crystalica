@@ -16,6 +16,9 @@ Crystalica prezintă 52 de cristale din colecția personală, fiecare cu descrie
 - **Sitemap** — generat automat
 - **Responsive** — layout adaptabil pentru mobile, tablet, desktop
 - **Lazy loading** imagini pentru performanță
+- **Paginile de profil** (`/@[username]`) — buton de urmărire, tab-uri Comunitate/Configurație, contoruri de portofoliu, listă de dorințe, urmărite și urmăritori
+- **Chatbot Botpress** — widget flotant în colțul dreapta-jos, disponibil pe toate paginile
+- **Buton scroll-to-top** — pe pagina `/cristale`, poziționat stânga
 
 ## Tech Stack
 
@@ -26,6 +29,8 @@ Crystalica prezintă 52 de cristale din colecția personală, fiecare cu descrie
 | [Content Collections](https://docs.astro.build/en/guides/content-collections/) | Tipare sigură pentru cristale |
 | [MDX](https://mdxjs.com) | Conținut rich cu componente |
 | Tailwind CSS | Styling utility-first |
+| Clerk | Autentificare și gestionare utilizatori |
+| Botpress | Chatbot integrat |
 
 ## Construire & Run
 
@@ -41,6 +46,9 @@ npm run build
 
 # Preview build
 npm run preview
+
+# Preview în runtime-ul Cloudflare Pages
+npm run preview:pages
 
 # Teste Playwright
 npm run test:playwright
@@ -90,28 +98,45 @@ Site-ul va fi disponibil la `https://crystalica.pages.dev` (sau domeniul custom 
 ```
 src/
 ├── content/
-│   ├── crystals/       # 52 fișiere MDX (unul per cristal)
+│   ├── crystals/       # Fișiere MDX (unul per cristal)
 │   └── config.ts       # Schema Content Collection
 ├── components/
 │   ├── crystal/        # CrystalHeader, CrystalSidebar, CrystalTabs
 │   ├── home/           # Hero, FeaturedCrystals, CategoriesSection, IntroSection
-│   └── layout/         # Header, Footer
+│   ├── layout/         # Header, Footer
+│   └── collections/    # CollectionsController, CrystalActions
 ├── layouts/
-│   ├── BaseLayout.astro    # Root layout + SEO
+│   ├── BaseLayout.astro    # Root layout + SEO + chatbot Botpress
 │   └── CrystalLayout.astro # Layout detaliu cristal
 ├── pages/
 │   ├── index.astro         # Homepage
 │   ├── cristale/
-│   │   ├── index.astro     # Lista toate cristalele
+│   │   ├── index.astro     # Lista toate cristalele (cu buton scroll-to-top stânga)
 │   │   └── [slug].astro    # Detaliu cristal (dynamic)
-│   ├── categorii/
-│   │   ├── index.astro     # Lista categorii
-│   │   └── [slug].astro    # Detalii categorie (static workarounds)
+│   ├── 404.astro           # Pagina 404
+│   ├── @[username].astro   # Pagina de profil (SSR, autentificare Clerk)
 │   └── rss.xml.ts          # Feed RSS
 └── styles/
     ├── tokens.css          # Design tokens (culori, spacing, type)
-    └── global.css          # Reset + components
+    └── global.css          # Reset + componente
 ```
+
+## Teste Playwright
+
+Toate testele se rulează cu:
+
+```bash
+npm run test:playwright
+```
+
+Testele acoperă:
+- Pagina de start (titlu, buton "Explorează Cristalele", scripturi Botpress)
+- Listarea cristalelor (`/cristale`) — navigație A-Z, click → detaliu, buton scroll-to-top
+- Pagină de detaliu cristal (`/cristale/[slug]`) — numele cristalului, săgețile de navigație
+- Pagini de profil (`/@[username]`) — buton de urmărire, tab-uri, acțiuni, contoruri
+- Pagina 404, feedul RSS (`/rss.xml`), prezența chatbotului Botpress pe toate paginile
+
+Rezultatele testelor (`test-results/`, `playwright-report/`) și starea de autentificare (`tests/playwright/.auth/`) nu sunt incluse în Git (sunt în `.gitignore`).
 
 ## Extensibilitate viitoare
 
