@@ -8,8 +8,7 @@ Crystalica prezintă 52 de cristale din colecția personală, fiecare cu descrie
 
 ### Funcționalități
 
-- **52 pagini de cristale** — fiecare cu secțiuni complete (Istorie, Vindecare, Folosințe, Îngrijire, Combinații)
-- **9 categorii** — Cristale, Pendule, Brățari, Pandanțive, Obelisc, Piramide, Îngerași, Copacel, Colier
+- **Pagini de cristale** — fiecare cu secțiuni complete (Istorie, Vindecare, Folosințe, Îngrijire, Combinații)
 - **Design Natural/Organic** — palette de culori pământ, tipografie elegantă (Cormorant Garamond, DM Sans, Playfair Display)
 - **SEO optimizat** — meta tags, Open Graph, Twitter Cards, JSON-LD
 - **RSS feed** — `rss.xml` pentru notificare cristale noi
