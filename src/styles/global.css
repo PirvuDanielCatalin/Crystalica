@@ -1418,7 +1418,9 @@ img {
   text-decoration: none;
   color: inherit;
   background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border);
+  border-color: var(--color-border);
+  border-width: 2px;
+  border-style: solid;
   border-radius: var(--radius-lg);
   overflow: hidden;
   transition: all var(--transition-base);
@@ -1981,22 +1983,26 @@ img {
 }
 
 .az-card-shell[data-state="portfolio"] > .az-card {
-  border-color: var(--color-crystal-green);
+  border-color: var(--color-crystal-green) !important;
+  border-width: 3px !important;
   box-shadow: var(--shadow-glow-green);
 }
 
 .az-card-shell[data-state="portfolio"] > .az-card:hover {
-  border-color: var(--color-crystal-green);
+  border-color: var(--color-crystal-green) !important;
+  border-width: 3px !important;
   box-shadow: var(--shadow-md), var(--shadow-glow-green);
 }
 
 .az-card-shell[data-state="wishlist"] > .az-card {
-  border-color: var(--color-crystal-golden);
+  border-color: var(--color-crystal-golden) !important;
+  border-width: 3px !important;
   box-shadow: var(--shadow-glow-golden);
 }
 
 .az-card-shell[data-state="wishlist"] > .az-card:hover {
-  border-color: var(--color-crystal-golden);
+  border-color: var(--color-crystal-golden) !important;
+  border-width: 3px !important;
   box-shadow: var(--shadow-md), var(--shadow-glow-golden);
 }
 
@@ -2382,7 +2388,9 @@ html[data-auth="disabled"] .crystal-actions {
   flex-direction: column;
   overflow: hidden;
   background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border);
+  border-color: var(--color-border);
+  border-width: 2px;
+  border-style: solid;
   border-radius: var(--radius-lg);
   transition:
     border-color var(--transition-fast),
@@ -2391,10 +2399,12 @@ html[data-auth="disabled"] .crystal-actions {
 
 .portfolio-item[data-state="portfolio"] {
   border-color: var(--color-crystal-green);
+  border-width: 3px !important;
 }
 
 .portfolio-item[data-state="wishlist"] {
   border-color: var(--color-crystal-golden);
+  border-width: 3px !important;
 }
 
 .portfolio-item:hover {
