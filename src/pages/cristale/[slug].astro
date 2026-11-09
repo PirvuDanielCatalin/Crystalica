@@ -3,6 +3,7 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import CrystalActions from '../../components/collections/CrystalActions.astro';
+import { Image } from 'astro:assets';
 
 export async function getStaticPaths() {
   const crystals = await getCollection('crystals');
@@ -25,6 +26,18 @@ const pageTitle = `${data.name} — Crystalica`;
 const pageDescription = data.description.length > 155 ? data.description.slice(0, 152) + '...' : data.description;
 const canonical = `/cristale/${data.slug}`;
 const ogImage = data.image || '/images/og-default.jpg';
+
+// Import the optimized image from assets
+let crystalImage = null;
+try {
+  crystalImage = await import(`../../assets/crystals/${data.slug}.png`);
+} catch {
+  try {
+    crystalImage = await import(`../../assets/crystals/${data.slug}.jpg`);
+  } catch {
+    crystalImage = null;
+  }
+}
 ---
 
 <BaseLayout title={pageTitle} description={pageDescription} canonical={canonical} ogImage={ogImage}>
@@ -59,8 +72,8 @@ const ogImage = data.image || '/images/og-default.jpg';
       <div class="crystal-main">
         <!-- Left: Image panel -->
         <div class="crystal-image-panel" data-state="none">
-          {data.image ? (
-            <img src={data.image} alt={data.name} class="crystal-image" loading="eager" />
+          {crystalImage ? (
+            <Image src={crystalImage.default} alt={data.name} class="crystal-image" loading="eager" format="webp" />
           ) : (
             <div class="crystal-image-placeholder">
               <svg width="64" height="64" viewBox="0 0 32 32" fill="none" aria-hidden="true">

@@ -4,9 +4,25 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import SearchBar from '../../components/SearchBar.astro';
 import CrystalActions from '../../components/collections/CrystalActions.astro';
+import { Image } from 'astro:assets';
 
 const crystals = await getCollection('crystals');
 const sorted = [...crystals].sort((a, b) => a.data.name.localeCompare(b.data.name, 'ro'));
+
+// Pre-load all crystal images as assets for optimization
+const imageCache: Record<string, any> = {};
+for (const crystal of sorted) {
+  const slug = crystal.data.slug;
+  try {
+    imageCache[slug] = await import(`../../assets/crystals/${slug}.png`);
+  } catch {
+    try {
+      imageCache[slug] = await import(`../../assets/crystals/${slug}.jpg`);
+    } catch {
+      imageCache[slug] = null;
+    }
+  }
+}
 
 // Build A-Z groups
 const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -57,8 +73,8 @@ const lettersWithContent = letters.filter(l => groups[l].length > 0);
                 >
                   <a href={`/cristale/${crystal.data.slug}`} class="az-card" aria-label={`${crystal.data.name} — ${crystal.data.chemicalFormula || ''}`}>
                     <div class="az-card-img">
-                      {crystal.data.image ? (
-                        <img src={crystal.data.image} alt="" loading="lazy" class="az-card-img-inner" />
+                      {crystal.data.image && imageCache[crystal.data.slug] ? (
+                        <Image src={imageCache[crystal.data.slug].default} alt="" loading="lazy" class="az-card-img-inner" format="webp" />
                       ) : (
                         <div class="az-card-placeholder">
                           <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">

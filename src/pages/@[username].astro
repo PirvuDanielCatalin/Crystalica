@@ -5,6 +5,7 @@ export const prerender = false;
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { fetchClerkUserProfile, type PublicProfile, fetchFollowersOf, fetchFollowedProfiles } from '../utils/clerk-server';
+import { Image } from 'astro:assets';
 
 const username = Astro.params.username;
 const profile = await fetchClerkUserProfile(username);
@@ -18,6 +19,21 @@ const crystalIndex = sorted.map((crystal) => ({
   image: crystal.data.image || '',
   formula: crystal.data.chemicalFormula || '',
 }));
+
+// Pre-load crystal images as assets for optimization
+const imageCache: Record<string, any> = {};
+for (const crystal of sorted) {
+  const slug = crystal.data.slug;
+  try {
+    imageCache[slug] = await import(`../assets/crystals/${slug}.png`);
+  } catch {
+    try {
+      imageCache[slug] = await import(`../assets/crystals/${slug}.jpg`);
+    } catch {
+      imageCache[slug] = null;
+    }
+  }
+}
 
 if (!profile) {
   Astro.response.headers.set('x-robots-tag', 'noindex');
@@ -145,17 +161,17 @@ const description = profile
                     <article class="portfolio-item" data-state="portfolio" data-slug={item.slug}>
                       <a href={`/cristale/${item.slug}`} class="portfolio-item-link">
                         <div class="portfolio-item-img">
-                          {item.image
-                            ? <img src={item.image} alt="" loading="lazy" />
-                            : (
-                              <div class="portfolio-item-placeholder">
-                                <svg width="36" height="36" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-                                  <path d="M16 2L22 8v16L16 30L10 24V8L16 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-                                  <path d="M16 8V24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                                  <path d="M10 16H22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                                </svg>
-                              </div>
-                            )}
+                          {item.image && imageCache[item.slug] ? (
+                            <Image src={imageCache[item.slug].default} alt="" loading="lazy" format="webp" />
+                          ) : (
+                            <div class="portfolio-item-placeholder">
+                              <svg width="36" height="36" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                                <path d="M16 2L22 8v16L16 30L10 24V8L16 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                                <path d="M16 8V24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                <path d="M10 16H22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                              </svg>
+                            </div>
+                          )}
                         </div>
                         <div class="portfolio-item-body">
                           <span class="portfolio-item-name">{item.name}</span>
@@ -180,17 +196,17 @@ const description = profile
                     <article class="portfolio-item" data-state="wishlist" data-slug={item.slug}>
                       <a href={`/cristale/${item.slug}`} class="portfolio-item-link">
                         <div class="portfolio-item-img">
-                          {item.image
-                            ? <img src={item.image} alt="" loading="lazy" />
-                            : (
-                              <div class="portfolio-item-placeholder">
-                                <svg width="36" height="36" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-                                  <path d="M16 2L22 8v16L16 30L10 24V8L16 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-                                  <path d="M16 8V24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                                  <path d="M10 16H22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                                </svg>
-                              </div>
-                            )}
+                          {item.image && imageCache[item.slug] ? (
+                            <Image src={imageCache[item.slug].default} alt="" loading="lazy" format="webp" />
+                          ) : (
+                            <div class="portfolio-item-placeholder">
+                              <svg width="36" height="36" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                                <path d="M16 2L22 8v16L16 30L10 24V8L16 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                                <path d="M16 8V24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                <path d="M10 16H22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                              </svg>
+                            </div>
+                          )}
                         </div>
                         <div class="portfolio-item-body">
                           <span class="portfolio-item-name">{item.name}</span>

@@ -7,6 +7,7 @@
   },
   "scripts": {
     "dev": "astro dev",
+    "prebuild": "node scripts/copy-assets-to-public.mjs",
     "build": "astro build && node scripts/prepare-pages-worker.mjs",
     "preview": "node scripts/ensure-preview-config.mjs && astro preview",
     "preview:pages": "wrangler pages dev dist/client",
@@ -17,6 +18,7 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.4.2",
+    "@astrojs/image": "^0.18.0",
     "@astrojs/mdx": "^8.1.1",
     "@astrojs/rss": "^4.0.19",
     "@astrojs/sitemap": "^3.7.4",
@@ -24,7 +26,8 @@
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.4.2",
     "pagefind": "^1.5.2",
-    "tailwindcss": "^4.3.3"
+    "tailwindcss": "^4.3.3",
+    "wrangler": "^4.159.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1"
