@@ -5,7 +5,6 @@ export const prerender = false;
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { fetchClerkUserProfile, type PublicProfile, fetchFollowersOf, fetchFollowedProfiles } from '../utils/clerk-server';
-import { Image } from 'astro:assets';
 
 const username = Astro.params.username;
 const profile = await fetchClerkUserProfile(username);
@@ -19,21 +18,6 @@ const crystalIndex = sorted.map((crystal) => ({
   image: crystal.data.image || '',
   formula: crystal.data.chemicalFormula || '',
 }));
-
-// Pre-load crystal images as assets for optimization
-const imageCache: Record<string, any> = {};
-for (const crystal of sorted) {
-  const slug = crystal.data.slug;
-  try {
-    imageCache[slug] = await import(`../assets/crystals/${slug}.png`);
-  } catch {
-    try {
-      imageCache[slug] = await import(`../assets/crystals/${slug}.jpg`);
-    } catch {
-      imageCache[slug] = null;
-    }
-  }
-}
 
 if (!profile) {
   Astro.response.headers.set('x-robots-tag', 'noindex');
@@ -140,6 +124,13 @@ const description = profile
               </svg>
               Configurație cont
             </button>
+            <button type="button" class="portfolio-nav-item" data-nav-tab="security" hidden>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              Securitate
+            </button>
           </nav>
         </aside>
 
@@ -161,8 +152,8 @@ const description = profile
                     <article class="portfolio-item" data-state="portfolio" data-slug={item.slug}>
                       <a href={`/cristale/${item.slug}`} class="portfolio-item-link">
                         <div class="portfolio-item-img">
-                          {item.image && imageCache[item.slug] ? (
-                            <Image src={imageCache[item.slug].default} alt="" loading="lazy" format="webp" />
+                          {item.image ? (
+                            <img src={item.image} alt="" loading="lazy" />
                           ) : (
                             <div class="portfolio-item-placeholder">
                               <svg width="36" height="36" viewBox="0 0 32 32" fill="none" aria-hidden="true">
@@ -196,8 +187,8 @@ const description = profile
                     <article class="portfolio-item" data-state="wishlist" data-slug={item.slug}>
                       <a href={`/cristale/${item.slug}`} class="portfolio-item-link">
                         <div class="portfolio-item-img">
-                          {item.image && imageCache[item.slug] ? (
-                            <Image src={imageCache[item.slug].default} alt="" loading="lazy" format="webp" />
+                          {item.image ? (
+                            <img src={item.image} alt="" loading="lazy" />
                           ) : (
                             <div class="portfolio-item-placeholder">
                               <svg width="36" height="36" viewBox="0 0 32 32" fill="none" aria-hidden="true">
